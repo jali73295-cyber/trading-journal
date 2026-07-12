@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-fs="md">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Gallery · TradeLog Pro</title>
+  <meta name="description" content="TradeLog Pro — chart screenshot gallery.">
+  <meta name="theme-color" content="#070b14">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script>
+    try { var s = JSON.parse(localStorage.getItem('tj.settings') || '{}'); var d = document.documentElement;
+      d.dataset.theme = s.theme || 'dark'; d.dataset.fs = s.fontSize || 'md';
+      if (s.accent) d.style.setProperty('--accent', s.accent); } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="gallery">
+  <div class="bg-orbs" aria-hidden="true"><div class="orb o1"></div><div class="orb o2"></div></div>
+  <div class="app">
+    <aside id="sidebar" class="sidebar" aria-label="Sidebar"></aside>
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-toggle" aria-label="Open menu"></button>
+        <div class="tb-left">
+          <h1>Gallery</h1>
+          <p class="sub" id="galSub">Your chart library.</p>
+        </div>
+        <div class="tb-actions">
+          <a class="btn btn-primary" href="trade.html"><span class="lbl">New Trade</span></a>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="card" style="--i:0">
+          <div class="card-h">
+            <h3 id="galFilterTitle">Filter screenshots</h3>
+            <span class="count-badge" id="galCount">0 images</span>
+            <span class="spacer"></span>
+            <button class="btn btn-ghost btn-sm" id="galClear">Clear</button>
+          </div>
+          <div class="filter-grid">
+            <div class="field"><label for="gPair">Pair</label><select class="select" id="gPair"></select></div>
+            <div class="field"><label for="gResult">Result</label><select class="select" id="gResult">
+              <option value="">All</option><option value="win">Win</option><option value="loss">Loss</option>
+              <option value="breakeven">Breakeven</option></select></div>
+            <div class="field"><label for="gStrategy">Strategy</label><select class="select" id="gStrategy"></select></div>
+            <div class="field"><label for="gType">Screenshot type</label><select class="select" id="gType"></select></div>
+            <div class="field"><label for="gMonth">Month</label><input class="input" id="gMonth" type="month"></div>
+          </div>
+        </section>
+
+        <section class="gal-grid" id="galGrid" style="--i:1"></section>
+
+        <section class="card hidden" id="galEmpty">
+          <div class="empty">
+            <div class="empty-ico" id="galEmptyIco"></div>
+            <h3>No screenshots yet</h3>
+            <p>Attach entry, exit and markup screenshots to your trades and they'll all be collected here, zoomable and filterable.</p>
+            <div class="row"><a class="btn btn-primary" href="trade.html">Log a trade</a></div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <div id="toasts" aria-live="polite"></div>
+
+  <script defer src="js/storage.js"></script>
+  <script defer src="js/images.js"></script>
+  <script defer src="js/metrics.js"></script>
+  <script defer src="js/ui.js"></script>
+  <script defer src="script.js"></script>
+  <script defer src="js/gallery.js"></script>
+</body>
+</html>

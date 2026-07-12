@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-fs="md">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Statistics · TradeLog Pro</title>
+  <meta name="description" content="TradeLog Pro — trading analytics and charts.">
+  <meta name="theme-color" content="#070b14">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script>
+    try { var s = JSON.parse(localStorage.getItem('tj.settings') || '{}'); var d = document.documentElement;
+      d.dataset.theme = s.theme || 'dark'; d.dataset.fs = s.fontSize || 'md';
+      if (s.accent) d.style.setProperty('--accent', s.accent); } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="statistics">
+  <div class="bg-orbs" aria-hidden="true"><div class="orb o1"></div><div class="orb o2"></div></div>
+  <div class="app">
+    <aside id="sidebar" class="sidebar" aria-label="Sidebar"></aside>
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-toggle" aria-label="Open menu"></button>
+        <div class="tb-left">
+          <h1>Statistics</h1>
+          <p class="sub">The data behind the discipline.</p>
+        </div>
+        <div class="tb-actions">
+          <select class="select" id="statPeriod" aria-label="Period" style="width:auto">
+            <option value="all">All time</option>
+            <option value="year">This year</option>
+            <option value="90">Last 90 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="month">This month</option>
+          </select>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="stat-strip" id="statStrip"></section>
+
+        <section class="charts-grid" id="chartsGrid">
+          <div class="card chart-card span2" style="--i:1">
+            <div class="card-h"><h3 id="hEquity">Equity Curve</h3><span class="hint">Cumulative R, trade by trade</span></div>
+            <div class="chart-wrap tall"><canvas id="chEquity"></canvas></div>
+          </div>
+          <div class="card chart-card" style="--i:2">
+            <div class="card-h"><h3 id="hWinLoss">Win vs Loss</h3><span class="hint">Outcome mix</span></div>
+            <div class="chart-wrap"><canvas id="chWinLoss"></canvas></div>
+          </div>
+          <div class="card chart-card" style="--i:3">
+            <div class="card-h"><h3 id="hMonthly">Monthly Performance</h3><span class="hint">Net R per month</span></div>
+            <div class="chart-wrap"><canvas id="chMonthly"></canvas></div>
+          </div>
+          <div class="card chart-card" style="--i:4">
+            <div class="card-h"><h3 id="hYearly">Yearly Performance</h3><span class="hint">Net R per year</span></div>
+            <div class="chart-wrap"><canvas id="chYearly"></canvas></div>
+          </div>
+          <div class="card chart-card" style="--i:5">
+            <div class="card-h"><h3 id="hAvgRR">Average RR</h3><span class="hint">Planned vs achieved, by month</span></div>
+            <div class="chart-wrap"><canvas id="chAvgRR"></canvas></div>
+          </div>
+          <div class="card chart-card" style="--i:6">
+            <div class="card-h"><h3 id="hPair">Pair Analysis</h3><span class="hint">Net R by instrument</span></div>
+            <div class="chart-wrap"><canvas id="chPair"></canvas></div>
+          </div>
+          <div class="card chart-card" style="--i:7">
+            <div class="card-h"><h3 id="hSession">Session Analysis</h3><span class="hint">Net R by session</span></div>
+            <div class="chart-wrap"><canvas id="chSession"></canvas></div>
+          </div>
+          <div class="card chart-card" style="--i:8">
+            <div class="card-h"><h3 id="hStrategy">Strategy Analysis</h3><span class="hint">Net R by setup type</span></div>
+            <div class="chart-wrap"><canvas id="chStrategy"></canvas></div>
+          </div>
+          <div class="card chart-card" style="--i:9">
+            <div class="card-h"><h3 id="hTimeframe">Timeframe Analysis</h3><span class="hint">Net R by entry timeframe</span></div>
+            <div class="chart-wrap"><canvas id="chTimeframe"></canvas></div>
+          </div>
+          <div class="card chart-card" style="--i:10">
+            <div class="card-h"><h3 id="hRR">R-Multiple Distribution</h3><span class="hint">How your results cluster</span></div>
+            <div class="chart-wrap"><canvas id="chRR"></canvas></div>
+          </div>
+          <div class="card chart-card" style="--i:11">
+            <div class="card-h"><h3 id="hPF">Profit Factor</h3><span class="hint">Gross win ÷ gross loss, by month</span></div>
+            <div class="chart-wrap"><canvas id="chPF"></canvas></div>
+          </div>
+          <div class="card chart-card" style="--i:12">
+            <div class="card-h"><h3 id="hMistakes">Mistake Frequency</h3><span class="hint">What keeps costing you</span></div>
+            <div class="chart-wrap"><canvas id="chMistakes"></canvas></div>
+          </div>
+          <div class="card chart-card" style="--i:13">
+            <div class="card-h"><h3 id="hEmotion">Emotion Analysis</h3><span class="hint">Average R by pre-trade emotion</span></div>
+            <div class="chart-wrap"><canvas id="chEmotion"></canvas></div>
+          </div>
+          <div class="card chart-card span2" style="--i:14">
+            <div class="card-h"><h3 id="hChecklist">Checklist Success Rate</h3><span class="hint">Win rate when each item is checked · adherence in tooltip</span></div>
+            <div class="chart-wrap"><canvas id="chChecklist"></canvas></div>
+          </div>
+        </section>
+
+        <section class="card hidden" id="statsEmpty">
+          <div class="empty">
+            <div class="empty-ico" id="statsEmptyIco"></div>
+            <h3>No data for this period</h3>
+            <p>Log trades — or pick a wider period — and the analytics will light up.</p>
+            <div class="row"><a class="btn btn-primary" href="trade.html">Log a trade</a></div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <div id="toasts" aria-live="polite"></div>
+
+  <script defer src="assets/vendor/chart.umd.min.js"></script>
+  <script defer src="js/storage.js"></script>
+  <script defer src="js/images.js"></script>
+  <script defer src="js/metrics.js"></script>
+  <script defer src="js/ui.js"></script>
+  <script defer src="js/charts.js"></script>
+  <script defer src="script.js"></script>
+  <script defer src="js/statistics.js"></script>
+</body>
+</html>
