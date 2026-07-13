@@ -3,7 +3,7 @@
    Precaches the app shell so the journal works fully offline.
    Bump VERSION whenever you edit any file, so clients update.
    ============================================================ */
-const VERSION = 'v1.0.0';
+const VERSION = 'v1.0.1';
 const CACHE = 'tradelog-' + VERSION;
 
 const ASSETS = [
@@ -17,24 +17,24 @@ const ASSETS = [
   './style.css',
   './script.js',
   './manifest.json',
-  './js/storage.js',
-  './js/images.js',
-  './js/metrics.js',
-  './js/ui.js',
-  './js/charts.js',
-  './js/journal.js',
-  './js/dashboard.js',
-  './js/trade.js',
-  './js/statistics.js',
-  './js/gallery.js',
-  './js/settings.js',
-  './assets/vendor/chart.umd.min.js',
-  './assets/icons/favicon.svg',
-  './assets/icons/favicon-32.png',
-  './assets/icons/icon-192.png',
-  './assets/icons/icon-512.png',
-  './assets/icons/icon-maskable-512.png',
-  './assets/icons/apple-touch-icon.png'
+  './storage.js',
+  './images.js',
+  './metrics.js',
+  './ui.js',
+  './charts.js',
+  './journal.js',
+  './dashboard.js',
+  './trade.js',
+  './statistics.js',
+  './gallery.js',
+  './settings.js',
+  './chart.umd.min.js',
+  './favicon.svg',
+  './favicon-32.png',
+  './icon-192.png',
+  './icon-512.png',
+  './icon-maskable-512.png',
+  './apple-touch-icon.png'
 ];
 
 self.addEventListener('install', event => {
