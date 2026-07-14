@@ -157,6 +157,31 @@
     $('ssNew').addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
   }
 
+  /* ---------- AI Review ---------- */
+  function renderAI() {
+    const keyEl = $('aiKey'), modelEl = $('aiModel');
+    if (!keyEl || !TJ.ai) return;
+    const ai = Object.assign({ key: '', model: TJ.ai.MODELS[0][0] }, s.ai || {});
+    modelEl.innerHTML = TJ.ai.MODELS.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
+    modelEl.value = ai.model;
+    if (modelEl.selectedIndex < 0) modelEl.value = TJ.ai.MODELS[0][0];
+    keyEl.value = ai.key;
+    $('aiSave').addEventListener('click', () => {
+      s.ai = { key: keyEl.value.trim(), model: modelEl.value };
+      save();
+      $('aiStatus').textContent = '';
+      TJ.ui.toast(s.ai.key ? 'AI settings saved' : 'AI key removed');
+    });
+    $('aiTest').addEventListener('click', async () => {
+      s.ai = { key: keyEl.value.trim(), model: modelEl.value }; save();
+      const st = $('aiStatus');
+      if (!s.ai.key) { st.textContent = '✗ Add your API key first'; return; }
+      st.textContent = 'Testing…';
+      try { await TJ.ai.ping(); st.textContent = '✓ Connected — ready to review'; }
+      catch (e) { st.textContent = '✗ ' + ((e && e.message) || 'failed'); }
+    });
+  }
+
   /* ---------- Generic list editors ---------- */
   const LISTS = [
     ['pairs', 'Pairs', 'tag'],
@@ -365,13 +390,14 @@
   /* ---------- Boot ---------- */
   function init() {
     [['hAppearance', 'sun'], ['hPrefs', 'sliders'], ['hChecklist', 'clipboard'],
-     ['hLists', 'tag'], ['hShots', 'camera'], ['hData', 'database'], ['hDanger', 'alert'], ['hAbout', 'info']]
+     ['hLists', 'tag'], ['hShots', 'camera'], ['hAI', 'flame'], ['hData', 'database'], ['hDanger', 'alert'], ['hAbout', 'info']]
       .forEach(([id, ic]) => { const el = $(id); if (el) el.innerHTML = TJ.icon(ic) + el.textContent; });
     appearance();
     prefs();
     renderChecklist();
     renderShotSlots();
     renderLists();
+    renderAI();
     renderData();
     renderAbout();
   }
