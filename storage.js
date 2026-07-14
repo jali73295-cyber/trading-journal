@@ -27,14 +27,16 @@
       defaultRisk: 1,
       pairs: ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'GBPJPY', 'AUDUSD', 'US30', 'NAS100', 'SPX500', 'BTCUSD', 'ETHUSD'],
       sessions: ['Asia', 'London', 'New York', 'London Close', 'Sydney'],
-      strategies: ['SMC', 'ICT 2022', 'Breakout', 'Reversal', 'Trend Continuation', 'Supply & Demand', 'Range Scalp', 'Swing'],
+      strategies: ['1MG', 'TopG', 'Fib', 'Supply & Demand'],
       timeframes: ['1M', '3M', '5M', '15M', '30M', '1H', '2H', '4H', 'Daily', 'Weekly'],
-      levels: ['Order Block', 'FVG', 'Breaker', 'Liquidity Pool', 'Equal Highs', 'Equal Lows', 'Support', 'Resistance', 'Session High/Low', 'Fib 0.705'],
+      levels: ['TJL1', 'TJL2 A+', 'SBR', 'RBS', 'DT', 'DB', 'QML A+', 'DUAL CHOC', 'ISS Level 2', 'ISS Level 3', 'ISS Level 4 A+'],
+      structures: ['Bullish', 'Bearish', 'Ranging', 'Choppy', 'Reversal'],
       emotions: ['Calm', 'Confident', 'Focused', 'Neutral', 'Hesitant', 'Anxious', 'FOMO', 'Greedy', 'Fearful', 'Frustrated', 'Revenge', 'Tired'],
       mistakes: ['Early Entry', 'Late Entry', 'Moved Stop Loss', 'Oversized Position', 'No Confirmation', 'Ignored Plan', 'Revenge Trade', 'Chased Price', 'Exited Too Early', 'Held Too Long', 'Traded Into News', 'Overtrading'],
       tags: ['A+', 'News', 'FOMO', 'Revenge', 'SMC', 'ISS', 'Scalp', 'Swing'],
-      checklist: ['Trend Confirmed', 'Liquidity Taken', 'CHOCH', 'MSS', 'FVG', 'OB', 'Risk Calculated', 'News Checked', 'Emotion Stable']
-        .map(label => ({ id: uid(), label }))
+      checklist: ['Emotion Stable', 'Setup', 'Level Tap', 'Liquidity Sweep', 'Candle Confirmation', 'SL TP Set']
+        .map(label => ({ id: uid(), label })),
+      shotSlots: [{ id: uid(), label: 'Screenshot' }]
     };
   }
 
@@ -62,9 +64,20 @@
     const saved = read(K.settings, null);
     if (!saved) {
       _settings = defaults();
-      write(K.settings, _settings); // persist so checklist item ids are stable
+      _settings.migratedV2 = true;
+      write(K.settings, _settings); // persist so item ids are stable
     } else {
       _settings = Object.assign(defaults(), saved);
+      if (!saved.migratedV2) {
+        // One-time v2 migration: adopt the trader's custom vocabulary
+        const d = defaults();
+        _settings.levels = d.levels;
+        _settings.strategies = d.strategies;
+        _settings.checklist = d.checklist;
+        _settings.shotSlots = d.shotSlots;
+        _settings.migratedV2 = true;
+        write(K.settings, _settings);
+      }
     }
     return _settings;
   }
@@ -203,22 +216,22 @@
     // [daysAgo, time, pair, dir, session, setup, htf, ltf, structure, level,
     //  result, rrP, rrA, pnl, risk, emoB, emoA, conf, tags, mistakes, lesson]
     const rows = [
-      [2, '10:15', 'XAUUSD', 'buy', 'London', 'SMC', '4H', '5M', 'Bullish', 'Order Block', 'win', 3, 2.8, 284, 1, 'Calm', 'Confident', 8, ['A+', 'SMC'], [], 'Patience at the OB paid off. Wait for the sweep every time.'],
-      [3, '15:40', 'NAS100', 'sell', 'New York', 'ICT 2022', '1H', '3M', 'Bearish', 'FVG', 'loss', 2.5, -1, -102, 1, 'FOMO', 'Frustrated', 4, ['News', 'FOMO'], ['Chased Price', 'Traded Into News'], 'Entered right before CPI — no trades 15 min around red news.'],
-      [4, '09:05', 'EURUSD', 'buy', 'London', 'Breakout', '4H', '15M', 'Bullish', 'Liquidity Pool', 'win', 2, 2.1, 208, 1, 'Focused', 'Calm', 7, ['SMC'], [], 'Clean breakout with retest confirmation.'],
-      [6, '11:30', 'GBPJPY', 'sell', 'London', 'SMC', 'Daily', '15M', 'Bearish', 'Equal Highs', 'breakeven', 3, 0, -4, 1, 'Confident', 'Neutral', 7, [], ['Exited Too Early'], 'Moved SL to BE too fast; trade later ran to full TP.'],
-      [8, '16:20', 'US30', 'buy', 'New York', 'Reversal', '1H', '5M', 'Reversal', 'Session High/Low', 'win', 4, 3.6, 355, 1, 'Calm', 'Confident', 9, ['A+'], [], 'NY reversal off the London low — best setup of the playbook.'],
-      [10, '08:45', 'XAUUSD', 'sell', 'London', 'SMC', '4H', '5M', 'Bearish', 'Breaker', 'loss', 2.5, -1, -98, 1, 'Anxious', 'Frustrated', 5, ['Revenge'], ['Revenge Trade', 'No Confirmation'], 'Took it to win back yesterday. Stop after 2 losses, walk away.'],
-      [13, '14:10', 'BTCUSD', 'buy', 'New York', 'Trend Continuation', '4H', '30M', 'Bullish', 'FVG', 'win', 2, 2, 195, 1, 'Focused', 'Calm', 7, ['Swing'], [], 'HTF trend + LTF FVG fill. Simple works.'],
-      [16, '10:55', 'GBPUSD', 'buy', 'London', 'SMC', '4H', '5M', 'Bullish', 'Order Block', 'win', 3, 3, 300, 1, 'Calm', 'Confident', 8, ['A+', 'SMC'], [], 'Textbook CHOCH into OB. Screenshot for the playbook.'],
-      [18, '17:35', 'NAS100', 'sell', 'New York', 'Range Scalp', '30M', '1M', 'Ranging', 'Resistance', 'loss', 1.5, -1, -95, 1, 'Tired', 'Tired', 3, ['Scalp'], ['Overtrading', 'Late Entry'], 'Fifth trade of the day. Cap at 3 trades max.'],
-      [21, '09:25', 'EURUSD', 'sell', 'London', 'ICT 2022', '1H', '5M', 'Bearish', 'FVG', 'win', 2.5, 2.4, 238, 1, 'Confident', 'Confident', 8, ['SMC'], [], 'Judas swing into premium then displacement down.'],
-      [24, '12:15', 'USDJPY', 'buy', 'New York', 'Breakout', '4H', '15M', 'Bullish', 'Support', 'breakeven', 2, 0, 0, 1, 'Neutral', 'Neutral', 6, [], [], 'Choppy day, right to scratch it.'],
-      [27, '10:05', 'XAUUSD', 'buy', 'London', 'SMC', '4H', '5M', 'Bullish', 'Liquidity Pool', 'win', 3, 2.5, 252, 1, 'Calm', 'Confident', 8, ['A+'], [], 'Asia low sweep + MSS. A+ conditions only.'],
-      [31, '15:50', 'US30', 'sell', 'New York', 'Reversal', '1H', '3M', 'Bearish', 'Equal Highs', 'loss', 3, -1, -100, 1, 'Greedy', 'Frustrated', 5, [], ['Oversized Position', 'Moved Stop Loss'], 'Widened the stop mid-trade — never again.'],
-      [35, '11:00', 'GBPJPY', 'buy', 'London', 'Trend Continuation', 'Daily', '15M', 'Bullish', 'Order Block', 'win', 2, 1.9, 186, 1, 'Focused', 'Calm', 7, ['Swing'], [], 'Daily OB held; partials at 1R made it stress-free.'],
-      [38, '09:40', 'EURUSD', 'buy', 'London', 'SMC', '4H', '5M', 'Bullish', 'FVG', 'win', 2.5, 2.5, 244, 1, 'Calm', 'Confident', 8, ['SMC'], [], 'Consistent model, consistent result.'],
-      [41, '16:05', 'NAS100', 'buy', 'New York', 'Breakout', '1H', '5M', 'Bullish', 'Resistance', 'loss', 2, -1, -97, 1, 'FOMO', 'Anxious', 4, ['FOMO', 'News'], ['Chased Price'], 'Chased an extended move. Let it come back to the level.']
+      [2, '10:15', 'XAUUSD', 'buy', 'London', 'TopG', '4H', '5M', 'Bullish', 'TJL1', 'win', 3, 2.8, 284, 1, 'Calm', 'Confident', 8, ['A+'], [], 'TJL1 tap + sweep — patience paid off.'],
+      [3, '15:40', 'NAS100', 'sell', 'New York', '1MG', '1H', '3M', 'Bearish', 'QML A+', 'loss', 2.5, -1, -102, 1, 'FOMO', 'Frustrated', 4, ['News', 'FOMO'], ['Chased Price', 'Traded Into News'], 'Entered before CPI — no trades 15 min around red news.'],
+      [4, '09:05', 'EURUSD', 'buy', 'London', 'Fib', '4H', '15M', 'Bullish', 'ISS Level 2', 'win', 2, 2.1, 208, 1, 'Focused', 'Calm', 7, ['ISS'], [], 'Clean fib retrace with candle confirmation.'],
+      [6, '11:30', 'GBPJPY', 'sell', 'London', 'TopG', 'Daily', '15M', 'Bearish', 'DT', 'breakeven', 3, 0, -4, 1, 'Confident', 'Neutral', 7, [], ['Exited Too Early'], 'Moved SL to BE too fast; it later hit full TP.'],
+      [8, '16:20', 'US30', 'buy', 'New York', '1MG', '1H', '5M', 'Reversal', 'SBR', 'win', 4, 3.6, 355, 1, 'Calm', 'Confident', 9, ['A+'], [], 'SBR flip at the London low — playbook A+.'],
+      [10, '08:45', 'XAUUSD', 'sell', 'London', 'TopG', '4H', '5M', 'Bearish', 'RBS', 'loss', 2.5, -1, -98, 1, 'Anxious', 'Frustrated', 5, ['Revenge'], ['Revenge Trade', 'No Confirmation'], 'Revenge entry. Stop after 2 losses, walk away.'],
+      [13, '14:10', 'BTCUSD', 'buy', 'New York', 'Supply & Demand', '4H', '30M', 'Bullish', 'ISS Level 3', 'win', 2, 2, 195, 1, 'Focused', 'Calm', 7, ['Swing'], [], 'HTF demand + LTF confirmation. Simple works.'],
+      [16, '10:55', 'GBPUSD', 'buy', 'London', 'TopG', '4H', '5M', 'Bullish', 'TJL2 A+', 'win', 3, 3, 300, 1, 'Calm', 'Confident', 8, ['A+'], [], 'Textbook TJL2 A+ — screenshot for the playbook.'],
+      [18, '17:35', 'NAS100', 'sell', 'New York', 'Fib', '30M', '1M', 'Ranging', 'DB', 'loss', 1.5, -1, -95, 1, 'Tired', 'Tired', 3, ['Scalp'], ['Overtrading', 'Late Entry'], 'Fifth trade of the day. Cap at 3 max.'],
+      [21, '09:25', 'EURUSD', 'sell', 'London', '1MG', '1H', '5M', 'Bearish', 'DUAL CHOC', 'win', 2.5, 2.4, 238, 1, 'Confident', 'Confident', 8, ['ISS'], [], 'Dual CHoCH + displacement down.'],
+      [24, '12:15', 'USDJPY', 'buy', 'New York', 'Fib', '4H', '15M', 'Bullish', 'ISS Level 2', 'rf', 2, 0, 0, 1, 'Neutral', 'Neutral', 6, [], [], 'SL to entry after 1R — stopped out risk-free.'],
+      [27, '10:05', 'XAUUSD', 'buy', 'London', 'TopG', '4H', '5M', 'Bullish', 'ISS Level 4 A+', 'win', 3, 2.5, 252, 1, 'Calm', 'Confident', 8, ['A+'], [], 'Asia low sweep into ISS L4 — A+ only.'],
+      [31, '15:50', 'US30', 'sell', 'New York', '1MG', '1H', '3M', 'Bearish', 'DT', 'loss', 3, -1, -100, 1, 'Greedy', 'Frustrated', 5, [], ['Oversized Position', 'Moved Stop Loss'], 'Widened the stop mid-trade — never again.'],
+      [35, '11:00', 'GBPJPY', 'buy', 'London', 'Supply & Demand', 'Daily', '15M', 'Bullish', 'TJL1', 'win', 2, 1.9, 186, 1, 'Focused', 'Calm', 7, ['Swing'], [], 'Daily demand held; partials made it stress-free.'],
+      [38, '09:40', 'EURUSD', 'buy', 'London', 'TopG', '4H', '5M', 'Bullish', 'ISS Level 3', 'win', 2.5, 2.5, 244, 1, 'Calm', 'Confident', 8, ['ISS'], [], 'Consistent model, consistent result.'],
+      [41, '16:05', 'NAS100', 'buy', 'New York', 'Fib', '1H', '5M', 'Bullish', 'QML A+', 'loss', 2, -1, -97, 1, 'FOMO', 'Anxious', 4, ['FOMO', 'News'], ['Chased Price'], 'Chased extension. Let price come to the level.']
     ];
     rows.reverse().forEach(r => {
       const [d, time, pair, dir, session, setup, htf, ltf, structure, level, result, rrP, rrA, pnl, risk, eb, ea, conf, tags, mistakes, lesson] = r;
