@@ -51,7 +51,7 @@
   TJ.fmt = fmt;
   TJ.rClass = r => r > 0 ? 'pos' : r < 0 ? 'neg' : 'flat';
   TJ.resultBadge = res => {
-    const map = { win: ['b-win', 'Win'], loss: ['b-loss', 'Loss'], breakeven: ['b-be', 'BE'] };
+    const map = { win: ['b-win', 'TP'], loss: ['b-loss', 'SL'], rf: ['b-rf', 'RF'], breakeven: ['b-be', 'BE'] };
     const [cls, label] = map[res] || ['b-open', 'Open'];
     return `<span class="badge ${cls}"><span class="dot"></span>${label}</span>`;
   };
