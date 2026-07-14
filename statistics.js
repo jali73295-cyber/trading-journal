@@ -147,15 +147,15 @@
     }
 
     /* 2 · Win vs Loss */
-    const closed = s.wins + s.losses + s.be;
+    const closed = s.wins + s.losses + s.rf + s.be;
     if (!setEmpty('chWinLoss', closed === 0, 'Close a trade to see the outcome mix.')) {
       make('chWinLoss', {
         type: 'doughnut',
         data: {
-          labels: ['Wins', 'Losses', 'Breakeven'],
+          labels: ['TP', 'SL', 'RF', 'BE'],
           datasets: [{
-            data: [s.wins, s.losses, s.be],
-            backgroundColor: [hexA(c.win, 0.85), hexA(c.loss, 0.85), hexA(c.be, 0.55)],
+            data: [s.wins, s.losses, s.rf, s.be],
+            backgroundColor: [hexA(c.win, 0.85), hexA(c.loss, 0.85), hexA(c.accent2, 0.8), hexA(c.be, 0.55)],
             borderWidth: 2, borderColor: 'rgba(0,0,0,0)', hoverOffset: 6
           }]
         },
