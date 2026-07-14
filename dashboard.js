@@ -76,7 +76,8 @@
 
       <section class="grid2">
         <div class="card chart-card" style="--i:3">
-          <div class="card-h"><h3>${TJ.icon('chart')}Equity Curve</h3><span class="hint">Cumulative R</span></div>
+          <div class="card-h"><h3>${TJ.icon('chart')}Equity Curve</h3><span class="spacer"></span>
+            <div class="seg" id="eqSeg"><button data-v="usd">$</button><button data-v="r">R</button></div></div>
           <div class="chart-wrap tall">${trades.length > 1 ? '<canvas id="dashEquity"></canvas>' : '<div class="mini-empty">Log a couple of trades to draw your curve.</div>'}</div>
         </div>
         <div class="card" style="--i:4">
@@ -98,21 +99,34 @@
         </div>
       </section>`;
 
-    if (trades.length > 1 && window.Chart) drawEquity(trades);
+    if (trades.length > 1 && window.Chart) {
+      let mode = trades.some(t => M.pnlOf(t)) ? 'usd' : 'r';
+      const seg = document.getElementById('eqSeg');
+      const sync = () => seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.v === mode));
+      seg.addEventListener('click', e => {
+        const b = e.target.closest('button');
+        if (!b) return;
+        mode = b.dataset.v; sync(); drawEquity(trades, mode);
+      });
+      sync();
+      drawEquity(trades, mode);
+    }
   }
 
-  function drawEquity(trades) {
+  let eqChart = null;
+  function drawEquity(trades, mode) {
     TJ.charts.themeChart();
     const c = TJ.charts.colors();
     const eq = M.equity(trades);
-    const cur = (TJ.store.settings().currency || '$');
-    new Chart(document.getElementById('dashEquity'), {
+    const usd = mode === 'usd';
+    if (eqChart) eqChart.destroy();
+    eqChart = new Chart(document.getElementById('dashEquity'), {
       type: 'line',
       data: {
         labels: eq.labels,
         datasets: [{
-          label: 'Cumulative R',
-          data: eq.rs,
+          label: usd ? 'Equity (P/L)' : 'Cumulative R',
+          data: usd ? eq.pnls : eq.rs,
           borderColor: c.accent,
           backgroundColor: ctx => TJ.charts.grad(ctx.chart, c.accent),
           borderWidth: 2.4, fill: true, tension: 0.35,
@@ -130,13 +144,15 @@
                 const t = eq.trades[items[0].dataIndex];
                 return `${t.pair || ''} ${items[0].label} · ${fmt.date(t.date)}`;
               },
-              label: item => ` Equity ${fmt.r(item.parsed.y)}   (P/L ${fmt.money(eq.pnls[item.dataIndex], cur)})`
+              label: item => usd
+                ? ` Equity ${fmt.money(item.parsed.y)}   (${fmt.r(eq.rs[item.dataIndex])})`
+                : ` Equity ${fmt.r(item.parsed.y)}   (P/L ${fmt.money(eq.pnls[item.dataIndex])})`
             }
           }
         },
         scales: {
           x: { ticks: { maxTicksLimit: 10 }, grid: { display: false } },
-          y: { ticks: { callback: v => v + 'R' } }
+          y: { ticks: { callback: v => usd ? fmt.money(v) : v + 'R' } }
         }
       }
     });
