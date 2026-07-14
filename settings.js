@@ -104,11 +104,59 @@
     $('clNew').addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
   }
 
+  /* ---------- Screenshot slots editor ---------- */
+  function renderShotSlots() {
+    const box = $('shotSlotsEditor');
+    if (!box) return;
+    if (!Array.isArray(s.shotSlots) || !s.shotSlots.length) s.shotSlots = [{ id: TJ.store.uid(), label: 'Screenshot' }];
+    box.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:9px">
+        ${s.shotSlots.map((item, i) => `
+          <div class="cl-editor-row" data-i="${i}">
+            <input class="input" value="${esc(item.label)}" aria-label="Screenshot slot ${i + 1}">
+            <button class="icon-btn" data-a="up" title="Move up" ${i === 0 ? 'disabled' : ''}
+              style="transform:rotate(180deg)">${TJ.icon('chev-d')}</button>
+            <button class="icon-btn" data-a="down" title="Move down" ${i === s.shotSlots.length - 1 ? 'disabled' : ''}>${TJ.icon('chev-d')}</button>
+            <button class="icon-btn" data-a="del" title="Remove" ${s.shotSlots.length === 1 ? 'disabled' : ''}>${TJ.icon('trash')}</button>
+          </div>`).join('')}
+      </div>
+      <div class="le-add" style="margin-top:14px">
+        <input class="input" id="ssNew" placeholder="Add screenshot slot… (e.g. Entry, Exit)">
+        <button class="btn" id="ssAdd">${TJ.icon('plus')}Add</button>
+      </div>
+      <p class="note" style="margin-top:10px">${TJ.icon('info')}These boxes appear on every trade form. Old trades keep their original screenshots.</p>`;
+    box.querySelectorAll('.cl-editor-row').forEach(row => {
+      const i = +row.dataset.i;
+      row.querySelector('input').addEventListener('change', e => {
+        const v = e.target.value.trim();
+        if (v) { s.shotSlots[i].label = v; save(); TJ.ui.toast('Slot renamed'); }
+        else renderShotSlots();
+      });
+      row.addEventListener('click', e => {
+        const a = e.target.closest('[data-a]');
+        if (!a || a.disabled) return;
+        if (a.dataset.a === 'up') { [s.shotSlots[i - 1], s.shotSlots[i]] = [s.shotSlots[i], s.shotSlots[i - 1]]; }
+        if (a.dataset.a === 'down') { [s.shotSlots[i + 1], s.shotSlots[i]] = [s.shotSlots[i], s.shotSlots[i + 1]]; }
+        if (a.dataset.a === 'del') { s.shotSlots.splice(i, 1); }
+        save(); renderShotSlots();
+      });
+    });
+    const add = () => {
+      const v = $('ssNew').value.trim();
+      if (!v) return;
+      s.shotSlots.push({ id: TJ.store.uid(), label: v });
+      save(); renderShotSlots();
+    };
+    $('ssAdd').addEventListener('click', add);
+    $('ssNew').addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+  }
+
   /* ---------- Generic list editors ---------- */
   const LISTS = [
     ['pairs', 'Pairs', 'tag'],
     ['sessions', 'Sessions', 'clock'],
     ['strategies', 'Strategies', 'layers'],
+    ['structures', 'Market Structure', 'layers'],
     ['timeframes', 'Timeframes', 'clock'],
     ['levels', 'Levels', 'target'],
     ['emotions', 'Emotions', 'smile'],
@@ -311,11 +359,12 @@
   /* ---------- Boot ---------- */
   function init() {
     [['hAppearance', 'sun'], ['hPrefs', 'sliders'], ['hChecklist', 'clipboard'],
-     ['hLists', 'tag'], ['hData', 'database'], ['hDanger', 'alert'], ['hAbout', 'info']]
+     ['hLists', 'tag'], ['hShots', 'camera'], ['hData', 'database'], ['hDanger', 'alert'], ['hAbout', 'info']]
       .forEach(([id, ic]) => { const el = $(id); if (el) el.innerHTML = TJ.icon(ic) + el.textContent; });
     appearance();
     prefs();
     renderChecklist();
+    renderShotSlots();
     renderLists();
     renderData();
     renderAbout();
