@@ -27,13 +27,14 @@
   /** Headline summary used by the dashboard cards. */
   function summary(ts) {
     const total = ts.length;
-    let wins = 0, losses = 0, be = 0, open = 0;
+    let wins = 0, losses = 0, be = 0, rf = 0, open = 0;
     let grossWin = 0, grossLoss = 0, totalR = 0, totalPnl = 0;
     let rrPlannedSum = 0, rrPlannedN = 0, rSum = 0, rN = 0;
     ts.forEach(t => {
       if (t.result === 'win') wins++;
       else if (t.result === 'loss') losses++;
       else if (t.result === 'breakeven') be++;
+      else if (t.result === 'rf') rf++;
       else open++;
       const r = rOf(t);
       totalR += r;
@@ -53,7 +54,7 @@
       ((b.date || '') + (b.time || '')).localeCompare((a.date || '') + (a.time || '')) || (b.number - a.number));
     let streakW = 0, streakL = 0;
     for (const t of desc) {
-      if (!t.result || t.result === 'breakeven') break;
+      if (!t.result || t.result === 'breakeven' || t.result === 'rf') break;
       if (t.result === 'win') { if (streakL) break; streakW++; }
       else { if (streakW) break; streakL++; }
     }
@@ -64,7 +65,7 @@
       if (!worst || r < rOf(worst)) worst = t;
     });
     return {
-      total, wins, losses, be, open, winRate,
+      total, wins, losses, be, rf, open, winRate,
       avgRR: rN ? rSum / rN : 0,
       avgRRPlanned: rrPlannedN ? rrPlannedSum / rrPlannedN : 0,
       profitFactor, totalR, totalPnl, monthR,
@@ -80,12 +81,13 @@
     ts.forEach(t => {
       const k = keyFn(t);
       if (k === null || k === undefined || k === '') return;
-      if (!map.has(k)) map.set(k, { key: k, count: 0, wins: 0, losses: 0, be: 0, r: 0, pnl: 0 });
+      if (!map.has(k)) map.set(k, { key: k, count: 0, wins: 0, losses: 0, be: 0, rf: 0, r: 0, pnl: 0 });
       const g = map.get(k);
       g.count++;
       if (t.result === 'win') g.wins++;
       else if (t.result === 'loss') g.losses++;
       else if (t.result === 'breakeven') g.be++;
+      else if (t.result === 'rf') g.rf++;
       g.r += rOf(t);
       g.pnl += pnlOf(t);
     });
