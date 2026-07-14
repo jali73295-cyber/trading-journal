@@ -12,15 +12,15 @@
   const M = TJ.metrics, fmt = TJ.fmt, esc = TJ.esc;
   const $ = id => document.getElementById(id);
 
-  const SLOTS = [
-    ['entry', 'Entry Screenshot'],
-    ['exit', 'Exit Screenshot'],
-    ['markup', 'Chart Markup'],
-    ['before', 'Before Trade'],
-    ['after', 'After Trade']
-  ];
+  // Legacy slot keys from v1 trades still display with their old names
+  const LEGACY_SLOTS = { entry: 'Entry Screenshot', exit: 'Exit Screenshot', markup: 'Chart Markup', before: 'Before Trade', after: 'After Trade' };
+  let slots = []; // active slot ids for the form (from Settings + this trade's own keys)
 
   const S = TJ.store.settings();
+  const labelFor = slot => {
+    const def = (S.shotSlots || []).find(x => x.id === slot);
+    return def ? def.label : (LEGACY_SLOTS[slot] || 'Screenshot');
+  };
   const root = $('tradeRoot');
   const params = new URLSearchParams(location.search);
   const viewId = params.get('id');
@@ -69,8 +69,8 @@
       .map(o => `<option value="${esc(o)}"${o === val ? ' selected' : ''}>${esc(o)}</option>`).join('');
   const dlist = (id, list) =>
     `<datalist id="${id}">${list.map(o => `<option value="${esc(o)}">`).join('')}</datalist>`;
-  const numField = (id, label, val, step = 'any', ph = '') => `
-    <div class="field"><label for="${id}">${label}</label>
+  const numField = (id, label, val, step = 'any', ph = '', col = 'c4') => `
+    <div class="field ${col}"><label for="${id}">${label}</label>
       <input class="input" id="${id}" type="number" step="${step}" inputmode="decimal"
         value="${val === null || val === undefined ? '' : val}" placeholder="${ph}"></div>`;
 
@@ -79,6 +79,9 @@
     const number = isEdit ? trade.number : TJ.store.nextNumber();
     dirState = trade.direction || 'buy';
     resState = trade.result || '';
+    const baseSlots = (S.shotSlots && S.shotSlots.length) ? S.shotSlots.map(x => x.id) : [];
+    slots = [...baseSlots, ...Object.keys(trade.shots || {}).filter(k => !baseSlots.includes(k))];
+    if (!slots.length) slots = ['shot-default'];
 
     $('tradeTitle').textContent = isEdit ? `Edit Trade #${number}` : 'New Trade';
     $('tradeSub').textContent = isEdit ? `${trade.pair || ''} · ${fmt.dateFull(trade.date)}` : `Will be logged as trade #${number}`;
@@ -86,7 +89,7 @@
       <a class="btn btn-ghost" href="${isEdit ? 'trade.html?id=' + trade.id : 'index.html'}">Cancel</a>
       <button class="btn btn-primary" id="saveBtn">${TJ.icon('save')}<span class="lbl">Save Trade</span></button>`;
 
-    const structures = ['Bullish', 'Bearish', 'Ranging', 'Choppy', 'Reversal'];
+    const structures = (S.structures && S.structures.length) ? S.structures : ['Bullish', 'Bearish', 'Ranging', 'Choppy', 'Reversal'];
     root.innerHTML = `
       ${dlist('dlPairs', S.pairs)}${dlist('dlLevels', S.levels)}${dlist('dlEmotions', S.emotions)}
 
@@ -138,22 +141,23 @@
           ${numField('f_sl', 'Stop Loss', trade.sl, 'any', '0.0000')}
           ${numField('f_tp', 'Take Profit', trade.tp, 'any', '0.0000')}
           ${numField('f_risk', 'Risk %', trade.riskPct, '0.1', '1')}
-          ${numField('f_lot', 'Lot Size', trade.lot, 'any', '0.10')}
           ${numField('f_rrp', 'RR Planned', trade.rrPlanned, '0.01', 'auto')}
         </div>
       </section>
 
       <section class="card" style="--i:3">
         <div class="card-h"><h3>${TJ.icon('activity')}Result</h3>
-          <span class="hint">RR Achieved is a signed R-multiple: +2.5 win · −1 loss · 0 BE</span></div>
+          <span class="hint">RR Achieved is a signed R-multiple: +2.5 TP · −1 SL · 0 RF/BE</span></div>
         <div class="card-b fg">
           <div class="field c12"><label>Outcome</label>
             <div class="seg" id="resSeg">
               <button type="button" data-v="">Open</button>
-              <button type="button" data-v="win" class="s-win">Win</button>
-              <button type="button" data-v="loss" class="s-loss">Loss</button>
-              <button type="button" data-v="breakeven" class="s-be">Breakeven</button>
+              <button type="button" data-v="win" class="s-win">TP</button>
+              <button type="button" data-v="loss" class="s-loss">SL</button>
+              <button type="button" data-v="rf" class="s-rf">RF</button>
+              <button type="button" data-v="breakeven" class="s-be">BE</button>
             </div></div>
+          ${numField('f_lot', 'Lot Size', trade.lot, 'any', '0.10')}
           ${numField('f_rra', 'RR Achieved', trade.rrAchieved, '0.01', '+2.5 / −1 / 0')}
           ${numField('f_pnl', 'Profit / Loss (' + esc(S.currency || '$') + ')', trade.pnl, '0.01', '0.00')}
           ${numField('f_comm', 'Commission', trade.commission, '0.01', '0.00')}
@@ -244,6 +248,7 @@
       if (rra && rra.value.trim() === '' && v) {
         if (v === 'win') rra.value = $('f_rrp').value || '';
         if (v === 'loss') rra.value = -1;
+        if (v === 'rf') rra.value = 0;
         if (v === 'breakeven') rra.value = 0;
       }
     });
@@ -300,14 +305,14 @@
   /* ---------- Screenshot slots ---------- */
   function renderShots() {
     const grid = $('shotsGrid');
-    grid.innerHTML = SLOTS.map(([slot, label]) => `
+    grid.innerHTML = slots.map(slot => `
       <div class="shot" data-slot="${slot}">
-        <div class="shot-lab">${label}</div>
+        <div class="shot-lab">${esc(labelFor(slot))}</div>
         <div class="shot-body"></div>
         <div class="shot-btns"></div>
         <input type="file" accept="image/*" class="hidden">
       </div>`).join('');
-    SLOTS.forEach(([slot]) => paintSlot(slot));
+    slots.forEach(slot => paintSlot(slot));
   }
 
   async function paintSlot(slot) {
@@ -327,7 +332,7 @@
       el.classList.add('filled');
       body.innerHTML = `<img class="shot-img" src="${src}" alt="${slot} screenshot">`;
       body.querySelector('img').addEventListener('click', () =>
-        TJ.ui.lightbox([{ src, title: SLOTS.find(s => s[0] === slot)[1] }]));
+        TJ.ui.lightbox([{ src, title: labelFor(slot) }]));
       btns.innerHTML = `
         <button type="button" class="btn btn-ghost btn-sm" data-a="replace">${TJ.icon('upload')}Replace</button>
         <button type="button" class="btn btn-danger btn-sm" data-a="remove">${TJ.icon('trash')}Remove</button>`;
@@ -405,7 +410,7 @@
 
     const saved = TJ.store.save(t);
     try {
-      for (const [slot] of SLOTS) {
+      for (const slot of slots) {
         const st = staged[slot];
         if (!st) continue;
         saved.shots = saved.shots || {};
@@ -559,7 +564,7 @@
 
     // Screenshots (async)
     const wrap = $('viewShots');
-    const entries = SLOTS.map(([slot, label]) => ({ slot, label, id: t.shots && t.shots[slot] })).filter(e => e.id);
+    const entries = Object.entries(t.shots || {}).map(([slot, id]) => ({ slot, label: labelFor(slot), id })).filter(e => e.id);
     if (!entries.length) {
       wrap.innerHTML = `<div class="note" style="grid-column:1/-1">${TJ.icon('camera')}No screenshots attached.
         <a class="link" href="trade.html?edit=${t.id}">Add some</a></div>`;
