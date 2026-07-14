@@ -241,6 +241,16 @@
   }
 
   function wireForm() {
+    // Suggest P/L in account currency: R achieved × (balance × risk%). Never overwrites what you typed.
+    const suggestPnl = () => {
+      const pnlEl = $('f_pnl');
+      if (!pnlEl || pnlEl.value.trim() !== '') return;
+      const bal = +(S.balance || 0);
+      const riskP = parseFloat($('f_risk').value);
+      const rraV = parseFloat($('f_rra').value);
+      if (!bal || isNaN(riskP) || isNaN(rraV)) return;
+      pnlEl.value = Math.round(rraV * bal * (riskP / 100) * 100) / 100;
+    };
     segWire('dirSeg', dirState, v => { dirState = v; });
     segWire('resSeg', resState, v => {
       resState = v;
@@ -251,6 +261,7 @@
         if (v === 'rf') rra.value = 0;
         if (v === 'breakeven') rra.value = 0;
       }
+      suggestPnl();
     });
 
     // RR planned auto-calc
@@ -263,6 +274,7 @@
     };
     ['f_entry', 'f_sl', 'f_tp'].forEach(id => $(id).addEventListener('input', calcRR));
     $('f_rrp').addEventListener('input', () => { $('f_rrp').dataset.dirty = '1'; });
+    $('f_rra').addEventListener('input', suggestPnl);
 
     // Confidence slider
     const conf = $('f_conf');
