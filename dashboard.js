@@ -158,6 +158,14 @@
     });
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render);
-  else render();
+  function wireAI() {
+    const b = document.getElementById('aiReviewBtn');
+    if (!b || !TJ.ai) return;
+    b.insertAdjacentHTML('afterbegin', TJ.icon('flame'));
+    b.addEventListener('click', () => TJ.ai.openSummary());
+  }
+
+  function boot() { render(); wireAI(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();
