@@ -8,6 +8,7 @@
   const M = TJ.metrics, fmt = TJ.fmt;
   const $ = id => document.getElementById(id);
   const charts = {};
+  let eqMode = null; // 'usd' | 'r' — auto-picked on first build
 
   /* ---------- Helpers ---------- */
   function make(id, cfg, plugins) {
@@ -114,13 +115,16 @@
 
     /* 1 · Equity curve */
     const eq = M.equity(ts);
+    if (eqMode === null) eqMode = ts.some(t => M.pnlOf(t)) ? 'usd' : 'r';
+    const usd = eqMode === 'usd';
+    document.querySelectorAll('#eqSegS button').forEach(b => b.classList.toggle('active', b.dataset.v === eqMode));
     if (!setEmpty('chEquity', eq.labels.length < 2, 'Log at least two trades to draw the curve.')) {
       make('chEquity', {
         type: 'line',
         data: {
           labels: eq.labels,
           datasets: [{
-            label: 'Cumulative R', data: eq.rs,
+            label: usd ? 'Equity (P/L)' : 'Cumulative R', data: usd ? eq.pnls : eq.rs,
             borderColor: c.accent,
             backgroundColor: ctx => TJ.charts.grad(ctx.chart, c.accent),
             fill: true, tension: 0.35, borderWidth: 2.4,
@@ -137,11 +141,13 @@
                   const t = eq.trades[it[0].dataIndex];
                   return `${t.pair || ''} ${it[0].label} · ${fmt.date(t.date)}`;
                 },
-                label: it => ` Equity ${fmt.r(it.parsed.y)}   (P/L ${fmt.money(eq.pnls[it.dataIndex])})`
+                label: it => usd
+                  ? ` Equity ${fmt.money(it.parsed.y)}   (${fmt.r(eq.rs[it.dataIndex])})`
+                  : ` Equity ${fmt.r(it.parsed.y)}   (P/L ${fmt.money(eq.pnls[it.dataIndex])})`
               }
             }
           },
-          scales: { x: { ticks: { maxTicksLimit: 12 }, grid: { display: false } }, y: { ticks: { callback: v => v + 'R' } } }
+          scales: { x: { ticks: { maxTicksLimit: 12 }, grid: { display: false } }, y: { ticks: { callback: v => usd ? fmt.money(v) : v + 'R' } } }
         }
       });
     }
@@ -351,6 +357,15 @@
 
   function init() {
     decorate();
+    const eqHead = $('hEquity').parentElement;
+    eqHead.insertAdjacentHTML('beforeend',
+      `<span class="spacer"></span><div class="seg" id="eqSegS"><button data-v="usd">$</button><button data-v="r">R</button></div>`);
+    $('eqSegS').addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      eqMode = b.dataset.v;
+      build($('statPeriod').value);
+    });
     const sel = $('statPeriod');
     sel.addEventListener('change', () => build(sel.value));
     build(sel.value);
