@@ -10,6 +10,11 @@
 
   const SLOT_LABEL = { entry: 'Entry', exit: 'Exit', markup: 'Chart Markup', before: 'Before Trade', after: 'After Trade' };
   const SLOT_ORDER = ['entry', 'exit', 'markup', 'before', 'after'];
+  const labelFor = slot => {
+    const def = (TJ.store.settings().shotSlots || []).find(x => x.id === slot);
+    return def ? def.label : (SLOT_LABEL[slot] || 'Screenshot');
+  };
+  const ord = slot => { const i = SLOT_ORDER.indexOf(slot); return i < 0 ? 99 : i; };
 
   let items = []; // { rec, trade, label, src }
   const f = { pair: '', result: '', strategy: '', type: '', month: '' };
@@ -21,13 +26,13 @@
     items = recs.map(rec => {
       const trade = tmap.get(rec.tradeId);
       if (!trade || !rec.blob) return null;
-      return { rec, trade, label: SLOT_LABEL[rec.slot] || rec.slot, src: URL.createObjectURL(rec.blob) };
+      return { rec, trade, label: labelFor(rec.slot), src: URL.createObjectURL(rec.blob) };
     }).filter(Boolean);
     items.sort((a, b) => {
       const k = t => (t.date || '') + 'T' + (t.time || '');
       const c = k(b.trade).localeCompare(k(a.trade));
       if (c) return c;
-      return SLOT_ORDER.indexOf(a.rec.slot) - SLOT_ORDER.indexOf(b.rec.slot);
+      return ord(a.rec.slot) - ord(b.rec.slot);
     });
   }
 
@@ -38,7 +43,7 @@
   function buildFilters() {
     fillSelect($('gPair'), [...new Set(items.map(i => i.trade.pair).filter(Boolean))].sort());
     fillSelect($('gStrategy'), [...new Set(items.map(i => i.trade.setup).filter(Boolean))].sort());
-    fillSelect($('gType'), SLOT_ORDER.filter(sl => items.some(i => i.rec.slot === sl)).map(sl => SLOT_LABEL[sl]));
+    fillSelect($('gType'), [...new Set(items.map(i => i.label))]);
   }
 
   function filtered() {
