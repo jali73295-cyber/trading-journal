@@ -459,9 +459,11 @@
     $('tradeSub').textContent = `${t.pair || ''} · ${fmt.dateFull(t.date)}${t.time ? ' · ' + t.time : ''}`;
     $('tradeActions').innerHTML = `
       <a class="btn btn-ghost" href="index.html">${TJ.icon('arrow-l')}<span class="lbl">Journal</span></a>
+      <button class="btn" id="aiFbBtn">${TJ.icon('flame')}<span class="lbl">AI Review</span></button>
       <a class="btn" href="trade.html?duplicate=${t.id}">${TJ.icon('copy')}<span class="lbl">Duplicate</span></a>
       <button class="btn btn-danger" id="delBtn">${TJ.icon('trash')}<span class="lbl">Delete</span></button>
       <a class="btn btn-primary" href="trade.html?edit=${t.id}">${TJ.icon('pencil')}<span class="lbl">Edit</span></a>`;
+    if (TJ.ai) $('aiFbBtn').addEventListener('click', () => TJ.ai.openTradeReview(t));
     $('delBtn').addEventListener('click', async () => {
       const ok = await TJ.ui.confirm({
         title: `Delete trade #${t.number}?`,
