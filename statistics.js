@@ -357,9 +357,6 @@
 
   function init() {
     decorate();
-    const eqHead = $('hEquity').parentElement;
-    eqHead.insertAdjacentHTML('beforeend',
-      `<span class="spacer"></span><div class="seg" id="eqSegS"><button data-v="usd">$</button><button data-v="r">R</button></div>`);
     $('eqSegS').addEventListener('click', e => {
       const b = e.target.closest('button');
       if (!b) return;
