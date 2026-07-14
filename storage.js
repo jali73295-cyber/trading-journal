@@ -25,6 +25,7 @@
       fontSize: 'md',
       currency: '$',
       defaultRisk: 1,
+      balance: null,
       pairs: ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'GBPJPY', 'AUDUSD', 'US30', 'NAS100', 'SPX500', 'BTCUSD', 'ETHUSD'],
       sessions: ['Asia', 'London', 'New York', 'London Close', 'Sydney'],
       strategies: ['1MG', 'TopG', 'Fib', 'Supply & Demand'],
