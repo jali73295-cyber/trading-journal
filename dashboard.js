@@ -45,9 +45,9 @@
 
     const cards = [
       { icon: 'layers', lab: 'Total Trades', val: s.total, sub: s.open ? `${s.open} still open` : 'All time' },
-      { icon: 'up', tone: 'win', lab: 'Wins', val: s.wins, sub: s.best ? `Best ${fmt.r(M.rOf(s.best))} · ${esc(s.best.pair || '')}` : '—' },
-      { icon: 'down', tone: 'loss', lab: 'Losses', val: s.losses, sub: s.worst && M.rOf(s.worst) < 0 ? `Worst ${fmt.r(M.rOf(s.worst))} · ${esc(s.worst.pair || '')}` : '—' },
-      { icon: 'target', tone: 'be', lab: 'Breakeven', val: s.be, sub: 'Scratched trades' },
+      { icon: 'up', tone: 'win', lab: 'Wins (TP)', val: s.wins, sub: s.best ? `Best ${fmt.r(M.rOf(s.best))} · ${esc(s.best.pair || '')}` : '—' },
+      { icon: 'down', tone: 'loss', lab: 'Losses (SL)', val: s.losses, sub: s.worst && M.rOf(s.worst) < 0 ? `Worst ${fmt.r(M.rOf(s.worst))} · ${esc(s.worst.pair || '')}` : '—' },
+      { icon: 'target', tone: 'be', lab: 'BE / RF', val: s.be + s.rf, sub: `${s.be} breakeven · ${s.rf} risk-free` },
       { icon: 'trophy', lab: 'Win Rate', val: fmt.pct(s.winRate), sub: `${s.wins}W / ${s.losses}L (BE excluded)`, ring: s.winRate },
       { icon: 'scale', lab: 'Average RR', val: fmt.n(s.avgRR) + 'R', sub: `Planned avg ${fmt.n(s.avgRRPlanned)}R`, cls: TJ.rClass(s.avgRR) },
       { icon: 'activity', lab: 'Profit Factor', val: s.profitFactor === Infinity ? '∞' : fmt.n(s.profitFactor), sub: pfLabel(s.profitFactor) },
