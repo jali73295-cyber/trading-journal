@@ -57,6 +57,12 @@
       s.defaultRisk = isNaN(v) ? 1 : v; save();
       TJ.ui.toast('Default risk updated');
     });
+    $('setBalance').value = s.balance ?? '';
+    $('setBalance').addEventListener('change', e => {
+      const v = parseFloat(e.target.value);
+      s.balance = isNaN(v) || v <= 0 ? null : v; save();
+      TJ.ui.toast(s.balance ? 'Account balance saved — P/L will auto-suggest' : 'Account balance cleared');
+    });
   }
 
   /* ---------- Checklist editor ---------- */
