@@ -26,6 +26,7 @@
       currency: '$',
       defaultRisk: 1,
       balance: null,
+      ai: { key: '', model: 'claude-sonnet-4-6' },
       pairs: ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'GBPJPY', 'AUDUSD', 'US30', 'NAS100', 'SPX500', 'BTCUSD', 'ETHUSD'],
       sessions: ['Asia', 'London', 'New York', 'London Close', 'Sydney'],
       strategies: ['1MG', 'TopG', 'Fib', 'Supply & Demand'],
