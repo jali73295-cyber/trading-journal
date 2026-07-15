@@ -26,7 +26,7 @@
       currency: '$',
       defaultRisk: 1,
       balance: null,
-      ai: { key: '', model: 'claude-sonnet-4-6' },
+      ai: { provider: 'gemini', claude: { key: '', model: 'claude-sonnet-4-6' }, gemini: { key: '', model: 'gemini-2.5-flash' } },
       pairs: ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'GBPJPY', 'AUDUSD', 'US30', 'NAS100', 'SPX500', 'BTCUSD', 'ETHUSD'],
       sessions: ['Asia', 'London', 'New York', 'London Close', 'Sydney'],
       strategies: ['1MG', 'TopG', 'Fib', 'Supply & Demand'],
