@@ -1,9 +1,9 @@
 /* =========================================================
    TradeLog Pro — js/ai.js
-   AI Review powered by the Claude API (Anthropic).
+   AI Review — Google Gemini (FREE tier) or Claude (Anthropic).
    Bring-your-own-key: the key lives ONLY in this browser's
    localStorage and every request goes straight from this
-   device to api.anthropic.com — no middle server.
+   device to the provider — no middle server.
    ========================================================= */
 (function () {
   'use strict';
@@ -11,40 +11,128 @@
   const M = () => TJ.metrics;
   const S = () => TJ.store.settings();
 
-  const API_URL = 'https://api.anthropic.com/v1/messages';
-  const MODELS = [
-    ['claude-sonnet-4-6', 'Claude Sonnet 4.6 — recommended'],
-    ['claude-haiku-4-5-20251001', 'Claude Haiku 4.5 — fastest & cheapest'],
-    ['claude-opus-4-8', 'Claude Opus 4.8 — deepest analysis']
-  ];
+  /* ---------- Providers ---------- */
+  const PROVIDERS = {
+    gemini: {
+      name: 'Google Gemini — free',
+      keyLabel: 'Gemini API key',
+      placeholder: 'AIza…',
+      models: [
+        ['gemini-2.5-flash', 'Gemini 2.5 Flash — recommended (free)'],
+        ['gemini-3.5-flash', 'Gemini 3.5 Flash — newest (free)'],
+        ['gemini-3.1-flash-lite', 'Gemini 3.1 Flash-Lite — highest free limits'],
+        ['gemini-2.5-pro', 'Gemini 2.5 Pro — deepest (free, ~100/day)']
+      ],
+      note: 'FREE key, no card needed: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> — sign in with Google → Create API key → paste here. Free tier has daily limits (plenty for personal use) and Google may use free-tier data to improve its products. Data goes straight from this browser to Google — no other server.'
+    },
+    claude: {
+      name: 'Anthropic Claude',
+      keyLabel: 'Anthropic API key',
+      placeholder: 'sk-ant-…',
+      models: [
+        ['claude-sonnet-4-6', 'Claude Sonnet 4.6 — recommended'],
+        ['claude-haiku-4-5-20251001', 'Claude Haiku 4.5 — fastest & cheapest'],
+        ['claude-opus-4-8', 'Claude Opus 4.8 — deepest analysis']
+      ],
+      note: 'Key: <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> (paid credits required — a review costs a few cents). Data goes straight from this browser to Anthropic — no other server.'
+    }
+  };
 
-  const cfg = () => Object.assign({ key: '', model: MODELS[0][0] }, S().ai || {});
-  const ready = () => !!cfg().key.trim();
+  /* Accepts any historical config shape and returns
+     { provider, gemini: {key, model}, claude: {key, model} } */
+  function normalize(raw) {
+    raw = raw || {};
+    const out = {
+      provider: (raw.provider === 'claude' || raw.provider === 'gemini') ? raw.provider : null,
+      gemini: Object.assign({ key: '', model: 'gemini-2.5-flash' }, raw.gemini || {}),
+      claude: Object.assign({ key: '', model: 'claude-sonnet-4-6' }, raw.claude || {})
+    };
+    if (raw.key !== undefined && !raw.claude) {           // v1.0.6 flat Claude-only shape
+      out.claude = { key: raw.key || '', model: raw.model || 'claude-sonnet-4-6' };
+    }
+    if (raw.geminiKey !== undefined && !raw.gemini) {     // interim flat shape
+      out.gemini = { key: raw.geminiKey || '', model: raw.geminiModel || 'gemini-2.5-flash' };
+    }
+    if (raw.claudeKey !== undefined && !raw.claude) {
+      out.claude = { key: raw.claudeKey || '', model: raw.claudeModel || 'claude-sonnet-4-6' };
+    }
+    if (!out.provider) out.provider = (out.claude.key && !out.gemini.key) ? 'claude' : 'gemini';
+    return out;
+  }
 
-  /* ---------- Core API call ---------- */
+  const cfg = () => normalize(S().ai);
+  const ready = () => { const c = cfg(); return !!(c[c.provider].key || '').trim(); };
+
+  /* ---------- Core API call (provider-aware) ---------- */
   async function call({ system, content, maxTokens = 1800 }) {
-    const { key, model } = cfg();
-    if (!key.trim()) { const e = new Error('NO_KEY'); e.code = 'NO_KEY'; throw e; }
-    let res;
-    try {
-      res = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'x-api-key': key.trim(),
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-          'content-type': 'application/json'
-        },
-        body: JSON.stringify({ model: model, max_tokens: maxTokens, system: system, messages: [{ role: 'user', content: content }] })
-      });
-    } catch (err) {
+    const c = cfg();
+    const key = (c[c.provider].key || '').trim();
+    const model = c[c.provider].model;
+    if (!key) { const e = new Error('NO_KEY'); e.code = 'NO_KEY'; throw e; }
+    return c.provider === 'gemini'
+      ? callGemini(key, model, system, content)
+      : callClaude(key, model, system, content, maxTokens);
+  }
+
+  async function doFetch(url, opts) {
+    try { return await fetch(url, opts); }
+    catch (err) {
       const e = new Error('Network error — check your internet connection and try again.');
       e.code = 'NET'; throw e;
     }
+  }
+
+  async function callGemini(key, model, system, content) {
+    const parts = content.map(b => b.type === 'image'
+      ? { inline_data: { mime_type: b.source.media_type, data: b.source.data } }
+      : { text: b.text });
+    const body = {
+      contents: [{ role: 'user', parts: parts }],
+      generationConfig: { temperature: 0.7 }
+    };
+    if (system) body.system_instruction = { parts: [{ text: system }] };
+    const res = await doFetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent',
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+        body: JSON.stringify(body)
+      });
+    let data = null;
+    try { data = await res.json(); } catch (_) { /* noop */ }
+    if (!res.ok) {
+      let msg = (data && data.error && data.error.message) || ('API error ' + res.status);
+      if (res.status === 400 && /api key not valid/i.test(msg)) msg = 'Invalid Gemini API key — check it in Settings → AI Review.';
+      if (res.status === 403) msg = 'Key rejected (403). ' + msg;
+      if (res.status === 429) msg = 'Gemini free-tier quota hit for now — wait a minute or switch model to Flash-Lite in Settings.';
+      if (res.status === 503) msg = 'Gemini servers busy — try again in a minute.';
+      const e = new Error(msg); e.status = res.status; throw e;
+    }
+    if (data && data.promptFeedback && data.promptFeedback.blockReason) {
+      throw new Error('Gemini blocked the request: ' + data.promptFeedback.blockReason);
+    }
+    const cand = (data && data.candidates && data.candidates[0]) || null;
+    const text = cand && cand.content && cand.content.parts
+      ? cand.content.parts.map(p => p.text || '').join('').trim() : '';
+    if (!text) throw new Error('Empty response from Gemini' + (cand && cand.finishReason ? ' (' + cand.finishReason + ')' : '') + ' — try again.');
+    return text;
+  }
+
+  async function callClaude(key, model, system, content, maxTokens) {
+    const res = await doFetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({ model: model, max_tokens: maxTokens, system: system, messages: [{ role: 'user', content: content }] })
+    });
     if (!res.ok) {
       let msg = 'API error ' + res.status;
       try { const j = await res.json(); msg = (j.error && j.error.message) || msg; } catch (_) { /* noop */ }
-      if (res.status === 401) msg = 'Invalid API key — check it in Settings → AI Review.';
+      if (res.status === 401) msg = 'Invalid Claude API key — check it in Settings → AI Review.';
       if (res.status === 429) msg = 'Rate limited or out of credits on your Anthropic account. ' + msg;
       if (res.status === 529) msg = 'Anthropic servers are overloaded — try again in a minute.';
       const e = new Error(msg); e.status = res.status; throw e;
@@ -199,8 +287,8 @@
   function needKeyModal() {
     TJ.ui.modal({
       title: 'AI Review setup',
-      body: '<p>Add your Anthropic API key first — it stays only on this device and is sent directly to Anthropic.</p>' +
-            '<p class="hint">Get a key at <strong>console.anthropic.com</strong> → API keys. Each review costs a few cents.</p>',
+      body: '<p>Add an API key first — it stays only on this device.</p>' +
+            '<p class="hint"><strong>Free option:</strong> Google Gemini — key in 2 minutes at <strong>aistudio.google.com/apikey</strong>, no card needed. Claude (Anthropic) also supported.</p>',
       actions: [
         { label: 'Open Settings', class: 'btn-primary', onClick: () => { location.href = 'settings.html#hAI'; return true; } },
         { label: 'Close' }
@@ -210,7 +298,7 @@
 
   function loadingBody(msg) {
     return '<div class="ai-load"><div class="ai-spin"></div><div>' + TJ.esc(msg) +
-           '<br><span class="hint">Claude is analysing — usually 5–20 seconds…</span></div></div>';
+           '<br><span class="hint">AI is analysing — usually 5–20 seconds…</span></div></div>';
   }
 
   function runFlow(title, work) {
@@ -255,7 +343,7 @@
           '<button class="btn" data-p="30">Last 30 days</button>' +
           '<button class="btn btn-primary" data-p="all">All time</button>' +
         '</div>' +
-        '<p class="hint">1 API call · data goes straight from this device to Anthropic · a few cents per review</p>'
+        '<p class="hint">1 API call · data goes straight from this device to your AI provider</p>'
     });
     m.el.querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', () => {
       const p = b.dataset.p;
@@ -280,8 +368,12 @@
 
   /* ---------- Public: connection test ---------- */
   function ping() {
-    return call({ content: [{ type: 'text', text: 'Reply with exactly: OK' }], maxTokens: 8 });
+    return call({ content: [{ type: 'text', text: 'Reply with exactly: OK' }], maxTokens: 16 });
   }
 
-  TJ.ai = { MODELS: MODELS, ready: ready, call: call, ping: ping, openSummary: openSummary, openTradeReview: openTradeReview };
+  TJ.ai = {
+    PROVIDERS: PROVIDERS, normalize: normalize,
+    ready: ready, call: call, ping: ping,
+    openSummary: openSummary, openTradeReview: openTradeReview
+  };
 })();
