@@ -109,20 +109,22 @@
         <!-- AI Review -->
         <section class="card" style="--i:5">
           <div class="card-h"><h3 id="hAI">AI Review</h3>
-            <span class="hint">Claude-powered analysis — your key stays on this device</span></div>
+            <span class="hint">Claude or Gemini powered analysis — your key stays on this device</span></div>
           <div class="card-b">
             <div class="fg">
-              <div class="field c8"><label for="aiKey">Anthropic API key</label>
-                <input class="input mono" id="aiKey" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"></div>
-              <div class="field c4"><label for="aiModel">Model</label>
+              <div class="field c4"><label for="aiProvider">Provider</label>
+                <select class="select" id="aiProvider"></select></div>
+              <div class="field c8"><label for="aiModel">Model</label>
                 <select class="select" id="aiModel"></select></div>
+              <div class="field c12"><label for="aiKey" id="aiKeyLabel">API key</label>
+                <input class="input mono" id="aiKey" type="password" placeholder="" autocomplete="off" spellcheck="false"></div>
             </div>
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px">
               <button class="btn btn-primary" id="aiSave">Save</button>
               <button class="btn" id="aiTest">Test connection</button>
               <span class="hint" id="aiStatus"></span>
             </div>
-            <p class="note" style="margin-top:12px">Get a key at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>. Each review is one API call (typically a few cents). Your journal data goes directly from this browser to Anthropic — no other server involved.</p>
+            <p class="note" style="margin-top:12px" id="aiNote"></p>
           </div>
         </section>
 
