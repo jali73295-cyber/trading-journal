@@ -159,27 +159,39 @@
 
   /* ---------- AI Review ---------- */
   function renderAI() {
-    const keyEl = $('aiKey'), modelEl = $('aiModel');
-    if (!keyEl || !TJ.ai) return;
-    const ai = Object.assign({ key: '', model: TJ.ai.MODELS[0][0] }, s.ai || {});
-    modelEl.innerHTML = TJ.ai.MODELS.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
-    modelEl.value = ai.model;
-    if (modelEl.selectedIndex < 0) modelEl.value = TJ.ai.MODELS[0][0];
-    keyEl.value = ai.key;
-    $('aiSave').addEventListener('click', () => {
-      s.ai = { key: keyEl.value.trim(), model: modelEl.value };
-      save();
+    const provEl = $('aiProvider'), keyEl = $('aiKey'), modelEl = $('aiModel');
+    if (!provEl || !TJ.ai) return;
+    const ai = TJ.ai.normalize(s.ai);
+    provEl.innerHTML = Object.entries(TJ.ai.PROVIDERS)
+      .map(([id, p]) => `<option value="${id}">${esc(p.name)}</option>`).join('');
+    const paint = () => {
+      const p = TJ.ai.PROVIDERS[ai.provider];
+      provEl.value = ai.provider;
+      modelEl.innerHTML = p.models.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
+      modelEl.value = ai[ai.provider].model;
+      if (modelEl.selectedIndex < 0) modelEl.value = p.models[0][0];
+      keyEl.value = ai[ai.provider].key;
+      keyEl.placeholder = p.placeholder;
+      $('aiKeyLabel').textContent = p.keyLabel;
+      $('aiNote').innerHTML = p.note;
       $('aiStatus').textContent = '';
-      TJ.ui.toast(s.ai.key ? 'AI settings saved' : 'AI key removed');
+    };
+    const grab = () => { ai[ai.provider] = { key: keyEl.value.trim(), model: modelEl.value }; };
+    provEl.addEventListener('change', () => { grab(); ai.provider = provEl.value; paint(); });
+    $('aiSave').addEventListener('click', () => {
+      grab(); s.ai = ai; save();
+      $('aiStatus').textContent = '';
+      TJ.ui.toast('AI settings saved');
     });
     $('aiTest').addEventListener('click', async () => {
-      s.ai = { key: keyEl.value.trim(), model: modelEl.value }; save();
+      grab(); s.ai = ai; save();
       const st = $('aiStatus');
-      if (!s.ai.key) { st.textContent = '✗ Add your API key first'; return; }
+      if (!ai[ai.provider].key) { st.textContent = '✗ Add your API key first'; return; }
       st.textContent = 'Testing…';
       try { await TJ.ai.ping(); st.textContent = '✓ Connected — ready to review'; }
       catch (e) { st.textContent = '✗ ' + ((e && e.message) || 'failed'); }
     });
+    paint();
   }
 
   /* ---------- Generic list editors ---------- */
