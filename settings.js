@@ -249,6 +249,7 @@
       ['btnBackup', 'shield', 'Full Backup', 'Everything incl. screenshots'],
       ['btnExportCsv', 'download', 'Export CSV', 'Spreadsheet-ready trade list'],
       ['btnImport', 'upload', 'Import / Restore', 'Replace data from a JSON file'],
+      ['btnStmt', 'upload', 'Import MT4/MT5 Statement', 'Merge trades from a broker report (HTML/CSV)'],
       ['btnDemo', 'database', 'Load Demo Data', 'Adds 16 sample trades']
     ];
     $('dataActions').innerHTML = defs.map(([id, icon, label, sub]) => `
@@ -288,6 +289,18 @@
       TJ.download(`tradelog-backup-${today()}.json`, JSON.stringify(data));
       TJ.ui.toast(`Backup ready · ${data.trades.length} trades · ${data.images.length} images`);
       btn.disabled = false;
+    });
+
+    const stmtInput = document.createElement('input');
+    stmtInput.type = 'file';
+    stmtInput.accept = '.htm,.html,.csv,.txt,.pdf';
+    stmtInput.className = 'hidden';
+    document.body.appendChild(stmtInput);
+    $('btnStmt').addEventListener('click', () => { if (TJ.importer) stmtInput.click(); });
+    stmtInput.addEventListener('change', async e => {
+      const f = e.target.files[0];
+      e.target.value = '';
+      if (f && TJ.importer) await TJ.importer.importStatementFile(f);
     });
 
     $('btnImport').addEventListener('click', () => $('importFile').click());
