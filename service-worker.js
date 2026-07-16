@@ -3,7 +3,7 @@
    Precaches the app shell so the journal works fully offline.
    Bump VERSION whenever you edit any file, so clients update.
    ============================================================ */
-const VERSION = 'v1.0.7';
+const VERSION = 'v1.0.8';
 const CACHE = 'tradelog-' + VERSION;
 
 const ASSETS = [
@@ -20,6 +20,7 @@ const ASSETS = [
   './storage.js',
   './images.js',
   './ai.js',
+  './importer.js',
   './metrics.js',
   './ui.js',
   './charts.js',
