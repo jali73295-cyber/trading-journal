@@ -250,6 +250,7 @@
       ['btnExportCsv', 'download', 'Export CSV', 'Spreadsheet-ready trade list'],
       ['btnImport', 'upload', 'Import / Restore', 'Replace data from a JSON file'],
       ['btnStmt', 'upload', 'Import MT4/MT5 Statement', 'Merge trades from a broker report (HTML/CSV)'],
+      ['btnPaste', 'clipboard', 'Paste FundingPips Trades', 'Copy the table from your share page & paste'],
       ['btnDemo', 'database', 'Load Demo Data', 'Adds 16 sample trades']
     ];
     $('dataActions').innerHTML = defs.map(([id, icon, label, sub]) => `
@@ -301,6 +302,24 @@
       const f = e.target.files[0];
       e.target.value = '';
       if (f && TJ.importer) await TJ.importer.importStatementFile(f);
+    });
+
+    $('btnPaste').addEventListener('click', () => {
+      if (!TJ.importer) return;
+      const m = TJ.ui.modal({
+        title: 'Paste FundingPips trades',
+        wide: true,
+        body: '<p class="hint" style="margin-top:0">FundingPips share page pe trades table select karke copy karo, phir neeche paste karo. (MT4/MT5 CSV text bhi chalega.)</p>' +
+              '<textarea class="input" id="fpPaste" rows="9" style="width:100%;resize:vertical;font-size:.78rem;line-height:1.5" placeholder="Symbol  Type  Open Date  Open  Closed Date  Closed  TP  SL  Lots  Commission  Profit&#10;XAUUSD&#10;Buy  7/16/2026, 18:07  4015.96 …"></textarea>',
+        actions: [
+          { label: 'Import', class: 'btn-primary', icon: 'upload', onClick: () => {
+              const v = document.getElementById('fpPaste').value;
+              if (v && v.trim()) TJ.importer.importText(v);
+            } },
+          { label: 'Cancel' }
+        ]
+      });
+      setTimeout(() => { const el = document.getElementById('fpPaste'); if (el) el.focus(); }, 60);
     });
 
     $('btnImport').addEventListener('click', () => $('importFile').click());
