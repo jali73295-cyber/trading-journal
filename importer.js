@@ -176,7 +176,8 @@
     const entry = r.open, close = r.close;
     const sl = (r.sl && r.sl > 0) ? r.sl : null;
     const tp = (r.tp && r.tp > 0) ? r.tp : null;
-    const profit = r.profit == null ? 0 : r.profit;
+    const gross = r.profit == null ? 0 : r.profit;
+    const profit = +(gross + (r.commission || 0) + (r.swap || 0)).toFixed(2);  // net, like the broker dashboard
     let rrA = null, rrP = null;
     if (entry != null && sl != null && Math.abs(entry - sl) > 1e-12) {
       const risk = Math.abs(entry - sl);
@@ -188,7 +189,8 @@
       'Imported from ' + r.format + ' statement',
       r.ticket ? '#' + r.ticket : '',
       c ? ('closed ' + c.date + ' ' + c.time + (close != null ? ' @ ' + close : '')) : '',
-      r.swap ? ('swap ' + r.swap) : ''
+      r.swap ? ('swap ' + r.swap) : '',
+      (r.commission || r.swap) ? ('net incl. commission') : ''
     ].filter(Boolean);
     return {
       date: o.date, time: o.time,
@@ -206,7 +208,7 @@
     };
   }
 
-  const sig = t => [t.date, t.time, t.pair, t.direction, t.lot, t.pnl, t.entry, t.sl, t.tp].join('|');
+  const sig = t => [t.date, t.time, t.pair, t.direction, t.lot, t.entry, t.sl, t.tp].join('|');
 
   /* ---------- shared merge flow ---------- */
   async function mergeFlow(trades, sourceName) {
