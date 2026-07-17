@@ -17,8 +17,8 @@
     .trim();
 
   const num = raw => {
-    let s = clean(raw).replace(/ /g, '');
-    if (!s || s === '-' || s === '—') return null;
+    let s = clean(raw).replace(/ /g, '').replace(/[^\d.,+\-]/g, '');
+    if (!s || s === '-' || s === '—' || s === '+') return null;
     const hasC = s.indexOf(',') !== -1, hasD = s.indexOf('.') !== -1;
     if (hasC && hasD) s = s.replace(/,/g, '');
     else if (hasC) {
@@ -126,6 +126,47 @@
     return out;
   }
 
+
+  /* ---------- FundingPips share-page paste ----------
+     Layout: header "Symbol Type Open Date Open Closed Date Closed TP SL Lots Commission Profit",
+     each trade = symbol on its own line, then a tab-separated row starting with Buy/Sell. */
+  function parseFundingPips(text) {
+    const lines = String(text || '').split(/\r?\n/);
+    const out = [];
+    let sym = null;
+    const pad = n => ('0' + n).slice(-2);
+    const dt = sVal => {
+      const m = clean(sVal).match(/(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s+(\d{1,2}):(\d{2})/);
+      return m ? (m[3] + '.' + pad(m[1]) + '.' + pad(m[2]) + ' ' + pad(m[4]) + ':' + m[5]) : null;
+    };
+    for (const raw of lines) {
+      const line = raw.replace(/[\u00a0\u202f]/g, ' ').trim();
+      if (!line) continue;
+      let cells = line.split('\t').map(clean).filter(c => c !== '');
+      if (cells.length === 1) cells = line.split(/ {2,}/).map(clean).filter(c => c !== '');
+      const first = (cells[0] || '').toLowerCase();
+      if (first === 'symbol') continue;                                   // header row
+      if (cells.length === 1 && /^[A-Za-z0-9._\-#&]{2,20}$/.test(cells[0]) && !/^(buy|sell)$/i.test(cells[0])) {
+        sym = cells[0]; continue;                                          // symbol-only line
+      }
+      let c = cells;
+      if (!/^(buy|sell)$/i.test(c[0] || '') && /^(buy|sell)$/i.test(c[1] || '')) {
+        sym = c[0]; c = c.slice(1);                                        // symbol inline variant
+      }
+      if (!/^(buy|sell)$/i.test(c[0] || '') || c.length < 10 || !sym) continue;
+      const openT = dt(c[1]);
+      if (!openT) continue;
+      out.push({
+        format: 'FundingPips', ticket: '', symbol: sym, type: c[0].toLowerCase(),
+        openTime: openT, closeTime: dt(c[3]) || '',
+        open: num(c[2]), close: num(c[4]),
+        tp: num(c[5]), sl: num(c[6]),                                      // NOTE: TP column comes before SL
+        lot: num(c[7]), commission: num(c[8]), swap: null, profit: num(c[9])
+      });
+    }
+    return out;
+  }
+
   /* ---------- statement row → TradeLog trade ---------- */
   function toTrade(r) {
     const o = splitDT(r.openTime);
@@ -165,22 +206,12 @@
     };
   }
 
-  const sig = t => [t.date, t.time, t.pair, t.direction, t.lot, t.pnl].join('|');
+  const sig = t => [t.date, t.time, t.pair, t.direction, t.lot, t.pnl, t.entry, t.sl, t.tp].join('|');
 
-  /* ---------- public: parse + merge with confirmation ---------- */
-  async function importStatementFile(file) {
-    const name = (file.name || '').toLowerCase();
-    if (name.endsWith('.pdf')) {
-      TJ.ui.toast('PDF report me trades table nahi hoti — MT4/MT5 desktop se HTML report use karo', 'err');
-      return 0;
-    }
-    let text = '';
-    try { text = await file.text(); }
-    catch (e) { TJ.ui.toast('File read nahi ho payi', 'err'); return 0; }
-    const rows = (name.endsWith('.csv') || name.endsWith('.txt')) ? parseCSV(text) : parseHTML(text);
-    const trades = rows.map(toTrade).filter(Boolean);
+  /* ---------- shared merge flow ---------- */
+  async function mergeFlow(trades, sourceName) {
     if (!trades.length) {
-      TJ.ui.toast('Is file me trades nahi mile — MT4/MT5 ka HTML report ya CSV chahiye', 'err');
+      TJ.ui.toast('Ismein trades nahi mile — format check karo', 'err');
       return 0;
     }
     const existing = TJ.store.list();
@@ -193,8 +224,8 @@
       return 0;
     }
     const ok = await TJ.ui.confirm({
-      title: 'Import statement?',
-      message: '"' + file.name + '" me ' + trades.length + ' trades mile. ' + fresh.length + ' naye import honge' +
+      title: 'Import trades?',
+      message: sourceName + ' me ' + trades.length + ' trades mile. ' + fresh.length + ' naye import honge' +
         (dup ? ' (' + dup + ' duplicate skip)' : '') + '. Existing data safe rahega — ye merge hai, replace nahi.',
       confirmText: 'Import ' + fresh.length + ' trades'
     });
@@ -207,5 +238,39 @@
     return fresh.length;
   }
 
-  TJ.importer = { importStatementFile: importStatementFile, parseHTML: parseHTML, parseCSV: parseCSV, toTrade: toTrade };
+  /* ---------- public: file import (MT4/MT5 HTML, CSV) ---------- */
+  async function importStatementFile(file) {
+    const name = (file.name || '').toLowerCase();
+    if (name.endsWith('.pdf')) {
+      TJ.ui.toast('PDF report me trades table nahi hoti — HTML report ya FundingPips paste use karo', 'err');
+      return 0;
+    }
+    let text = '';
+    try { text = await file.text(); }
+    catch (e) { TJ.ui.toast('File read nahi ho payi', 'err'); return 0; }
+    let rows;
+    if (name.endsWith('.csv') || name.endsWith('.txt')) {
+      rows = parseCSV(text);
+      if (!rows.length) rows = parseFundingPips(text);
+    } else {
+      rows = parseHTML(text);
+      if (!rows.length) rows = parseFundingPips(text);
+    }
+    return mergeFlow(rows.map(toTrade).filter(Boolean), '"' + file.name + '"');
+  }
+
+  /* ---------- public: pasted text import (FundingPips share page etc.) ---------- */
+  async function importText(text) {
+    let rows = parseFundingPips(text);
+    if (!rows.length) rows = parseCSV(text);
+    if (!rows.length && /<table/i.test(text)) rows = parseHTML(text);
+    return mergeFlow(rows.map(toTrade).filter(Boolean), 'Pasted data');
+  }
+
+  TJ.importer = {
+    importStatementFile: importStatementFile,
+    importText: importText,
+    parseHTML: parseHTML, parseCSV: parseCSV, parseFundingPips: parseFundingPips,
+    toTrade: toTrade
+  };
 })();
