@@ -138,7 +138,7 @@
       id: '', number: 0, schema: SCHEMA,
       date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
       time: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
-      session: '', pair: '', direction: 'buy',
+      session: '', zoneSize: '', pair: '', direction: 'buy',
       tfMain: '', tfHigher: '', tfEntry: '',
       structure: '', setup: '', day: '', level: '',
       entry: null, sl: null, tp: null,
@@ -173,7 +173,7 @@
   }
 
   const CSV_COLS = ['number', 'date', 'time', 'session', 'pair', 'direction', 'tfMain', 'tfHigher', 'tfEntry',
-    'structure', 'setup', 'day', 'level', 'entry', 'sl', 'tp', 'riskPct', 'lot', 'rrPlanned', 'rrAchieved',
+    'structure', 'setup', 'day', 'level', 'zoneSize', 'entry', 'sl', 'tp', 'riskPct', 'lot', 'rrPlanned', 'rrAchieved',
     'pnl', 'commission', 'spread', 'pips', 'result', 'emotionBefore', 'emotionAfter', 'confidence',
     'checklistScore', 'mistakes', 'lesson', 'tags', 'tvLink', 'notes'];
   function toCSV(rows) {
