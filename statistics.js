@@ -365,6 +365,43 @@
         return out;
       },
       v => v + '%');
+
+    /* 15 · RF vs Normal method */
+    renderRF(ts);
+  }
+
+  function renderRF(ts) {
+    const card = $('rfCard'), body = $('rfBody');
+    if (!card || !body) return;
+    const c = M.rfCompare(ts);
+    if (!c.count) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    const cur = TJ.store.settings().currency || '$';
+    const sign = v => (v > 0 ? '+' : '') + v;
+    const money = v => (v == null ? null : (v >= 0 ? '+' : '−') + fmt.money(Math.abs(v)).replace('-', ''));
+
+    const verdictText = c.verdict === 'rf'
+      ? `Over these ${c.count} RF trades, your risk-free method is <b style="color:var(--win)">ahead by ${sign(c.diffR)}R</b>${c.diffMoney != null ? ' (~' + money(c.diffMoney) + ')' : ''} vs taking them full-size. The losses it saved outweigh the upside given up — <b>RF is working for you.</b>`
+      : c.verdict === 'normal'
+        ? `Over these ${c.count} RF trades, RF is <b style="color:var(--loss)">behind by ${sign(c.diffR)}R</b>${c.diffMoney != null ? ' (~' + money(c.diffMoney) + ')' : ''} vs taking them full-size. Your runners hit TP often enough that booking half is costing more upside than it saves — <b>full-size would have earned more here.</b>`
+        : `Over these ${c.count} RF trades, RF and full-size are <b>basically even</b> so far.`;
+
+    const rows = [
+      ['RF trades analysed', String(c.count)],
+      ['RF method result', sign(c.rfR) + 'R' + (c.rfMoney != null ? '  (' + money(c.rfMoney) + ')' : '')],
+      ['If taken full-size', sign(c.normR) + 'R' + (c.normMoney != null ? '  (' + money(c.normMoney) + ')' : '')],
+      ['Difference', sign(c.diffR) + 'R' + (c.diffMoney != null ? '  (' + money(c.diffMoney) + ')' : '')],
+      ['Trades RF saved (runner hit SL)', c.savedCount + '  (+' + c.savedR + 'R protected)'],
+      ['Trades RF cost (runner hit TP)', c.costCount + '  (−' + c.costR + 'R upside given up)']
+    ];
+
+    body.innerHTML =
+      `<p style="margin:2px 0 14px;line-height:1.6">${verdictText}</p>` +
+      `<div class="kv-grid">` +
+        rows.map(([k, v]) => `<div class="kv"><b>${k}</b><span>${v}</span></div>`).join('') +
+      `</div>` +
+      (c.missingRunner ? `<p class="note" style="margin-top:12px">${TJ.icon('info')}${c.missingRunner} RF trade${c.missingRunner === 1 ? '' : 's'} skipped — set the <b>Runner: TP/SL</b> field on those so they count here.</p>` : '') +
+      `<p class="note" style="margin-top:10px">${TJ.icon('info')}Rule of thumb: RF wins when your runners hit SL more often than TP. Money is estimated from your average ${cur} per R.</p>`;
   }
 
   function init() {
