@@ -275,7 +275,7 @@
       ['btnExportJson', 'download', 'Export JSON (data)', 'Trades + settings, no images'],
       ['btnBackup', 'shield', 'Full Backup', 'Everything incl. screenshots'],
       ['btnExportCsv', 'download', 'Export CSV', 'Spreadsheet-ready trade list'],
-      ['btnImport', 'upload', 'Import / Restore', 'Replace data from a JSON file'],
+      ['btnImport', 'upload', 'Import / Restore', 'Merge or replace from a backup file'],
       ['btnStmt', 'upload', 'Import MT4/MT5 Statement', 'Merge trades from a broker report (HTML/CSV)'],
       ['btnPaste', 'clipboard', 'Paste FundingPips Trades', 'Copy the table from your share page & paste'],
       ['btnDemo', 'database', 'Load Demo Data', 'Adds 16 sample trades']
@@ -359,24 +359,68 @@
       catch (err) { return TJ.ui.toast('That file is not valid JSON.', 'err'); }
       if (!obj || !Array.isArray(obj.trades)) return TJ.ui.toast('Not a TradeLog export — no trades found.', 'err');
       const nImg = (obj.images || []).length;
-      const ok = await TJ.ui.confirm({
-        title: 'Restore from backup?',
-        message: `This replaces ALL current data with "${file.name}" (${obj.trades.length} trades${nImg ? ', ' + nImg + ' images' : ''}). This cannot be undone.`,
-        confirmText: 'Replace everything', danger: true
+      const imgById = {};
+      (obj.images || []).forEach(im => { (imgById[im.tradeId] = imgById[im.tradeId] || []).push(im); });
+
+      // Let the user choose: Merge (add) or Replace (overwrite). Merge is the safe default.
+      const mode = await new Promise(resolve => {
+        const m = TJ.ui.modal({
+          title: 'Import backup',
+          body: `<p>"${esc(file.name)}" has <b>${obj.trades.length} trades</b>${nImg ? ' and <b>' + nImg + ' screenshots</b>' : ''}.</p>` +
+                `<p class="hint">How should this be brought in?</p>` +
+                `<div class="ai-chips" style="margin-top:6px">` +
+                  `<button class="btn btn-primary" data-m="merge">Merge (add to my data)</button>` +
+                  `<button class="btn btn-danger" data-m="replace">Replace everything</button>` +
+                `</div>` +
+                `<p class="note" style="margin-top:12px">${TJ.icon('info')}<b>Merge</b> keeps your existing trades and adds the new ones (duplicates are skipped). <b>Replace</b> wipes current data first — cannot be undone.</p>`
+        });
+        m.el.querySelectorAll('[data-m]').forEach(b => b.addEventListener('click', () => { m.close(); resolve(b.dataset.m); }));
+        // closing the modal without choosing → cancel
+        const obs = m.el.querySelector('.modal-x');
+        if (obs) obs.addEventListener('click', () => resolve(null));
       });
-      if (!ok) return;
-      TJ.store.replaceAll(obj);
-      if (nImg) {
-        try {
-          await TJ.images.clear();
-          for (const im of obj.images) {
-            await TJ.images.put({ id: im.id, tradeId: im.tradeId, slot: im.slot, name: im.name, blob: TJ.images.dataURLToBlob(im.dataUrl) });
-          }
-        } catch (err) { TJ.ui.toast('Data restored, but images failed (IndexedDB unavailable).', 'err'); }
+      if (!mode) return;
+
+      if (mode === 'replace') {
+        const ok = await TJ.ui.confirm({
+          title: 'Replace everything?',
+          message: `This deletes all current trades and screenshots, then restores "${file.name}". This cannot be undone.`,
+          confirmText: 'Replace everything', danger: true
+        });
+        if (!ok) return;
+        TJ.store.replaceAll(obj);
+        if (nImg) {
+          try {
+            await TJ.images.clear();
+            for (const im of obj.images) {
+              await TJ.images.put({ id: im.id, tradeId: im.tradeId, slot: im.slot, name: im.name, blob: TJ.images.dataURLToBlob(im.dataUrl) });
+            }
+          } catch (err) { TJ.ui.toast('Data restored, but images failed (IndexedDB unavailable).', 'err'); }
+        }
+        TJ.applyAppearance(TJ.store.settings());
+        TJ.ui.toast('Restore complete');
+        setTimeout(() => location.reload(), 700);
+        return;
       }
-      TJ.applyAppearance(TJ.store.settings());
-      TJ.ui.toast('Restore complete');
-      setTimeout(() => location.reload(), 700);
+
+      // MERGE
+      const res = TJ.store.mergeImport(obj);
+      if (nImg && Object.keys(res.idMap).length) {
+        try {
+          for (const oldTid of Object.keys(res.idMap)) {
+            const newTid = res.idMap[oldTid];
+            for (const im of (imgById[oldTid] || [])) {
+              const newImgId = TJ.store.uid();
+              await TJ.images.put({ id: newImgId, tradeId: newTid, slot: im.slot, name: im.name, blob: TJ.images.dataURLToBlob(im.dataUrl) });
+              // re-point the merged trade's shot id to the new image
+              const tr = TJ.store.byId(newTid);
+              if (tr) { tr.shots = tr.shots || {}; tr.shots[im.slot] = newImgId; TJ.store.save(tr); }
+            }
+          }
+        } catch (err) { TJ.ui.toast('Trades merged, but some screenshots failed (IndexedDB).', 'err'); }
+      }
+      TJ.ui.toast(`Merged · ${res.added} added${res.skipped ? ' · ' + res.skipped + ' duplicate skipped' : ''}`);
+      setTimeout(() => location.reload(), 900);
     });
 
     $('btnDemo').addEventListener('click', async () => {
