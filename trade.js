@@ -64,6 +64,13 @@
   let chipTags = null, chipMist = null;
   const staged = {}; // slot -> { file, url } | { remove: true }
 
+  const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const dayFromDate = ds => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ds || '');
+    if (!m) return '';
+    const d = new Date(+m[1], +m[2] - 1, +m[3]).getDay(); // 0=Sun..6=Sat
+    return (d >= 1 && d <= 5) ? DAYS[d - 1] : '';
+  };
   const opts = (list, val) =>
     `<option value="">—</option>` + [...new Set([...list, ...(val ? [val] : [])])]
       .map(o => `<option value="${esc(o)}"${o === val ? ' selected' : ''}>${esc(o)}</option>`).join('');
@@ -125,8 +132,8 @@
             <select class="select" id="f_tfEntry">${opts(S.timeframes, trade.tfEntry)}</select></div>
           <div class="field c4"><label for="f_structure">Market Structure</label>
             <select class="select" id="f_structure">${opts(structures, trade.structure)}</select></div>
-          <div class="field c4"><label for="f_setup">Setup Type / Strategy</label>
-            <select class="select" id="f_setup">${opts(S.strategies, trade.setup)}</select></div>
+          <div class="field c4"><label for="f_day">Day</label>
+            <select class="select" id="f_day">${opts(DAYS, trade.day || dayFromDate(trade.date))}</select></div>
           <div class="field c4"><label for="f_level">Level</label>
             <input class="input" id="f_level" list="dlLevels" placeholder="e.g. Order Block"
               value="${esc(trade.level || '')}"></div>
@@ -275,6 +282,15 @@
     ['f_entry', 'f_sl', 'f_tp'].forEach(id => $(id).addEventListener('input', calcRR));
     $('f_rrp').addEventListener('input', () => { $('f_rrp').dataset.dirty = '1'; });
     $('f_rra').addEventListener('input', suggestPnl);
+    const dayEl = $('f_day');
+    if (dayEl) {
+      dayEl.addEventListener('change', () => { dayEl.dataset.dirty = '1'; });
+      $('f_date').addEventListener('change', () => {
+        if (dayEl.dataset.dirty) return;
+        const d = dayFromDate($('f_date').value);
+        if (d) dayEl.value = d;
+      });
+    }
 
     // Confidence slider
     const conf = $('f_conf');
@@ -390,7 +406,7 @@
     t.tfHigher = g('f_tfHigher').value;
     t.tfEntry = g('f_tfEntry').value;
     t.structure = g('f_structure').value;
-    t.setup = g('f_setup').value;
+    t.day = g('f_day').value;
     t.level = g('f_level').value.trim();
     t.entry = numv('f_entry'); t.sl = numv('f_sl'); t.tp = numv('f_tp');
     t.riskPct = numv('f_risk'); t.lot = numv('f_lot');
@@ -512,7 +528,7 @@
             <div class="kv-grid">
               ${kv('Timeframes', esc(tfLine) || null)}
               ${kv('Structure', esc(t.structure))}
-              ${kv('Setup', esc(t.setup))}
+              ${kv('Day', esc(t.day || ''))}
               ${kv('Level', esc(t.level))}
               ${kv('Session', esc(t.session))}
             </div>
