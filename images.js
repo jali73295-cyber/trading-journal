@@ -87,6 +87,62 @@
     return u;
   }
 
+  /* ---------- Compression ----------
+     Shrinks a photo/screenshot before it goes into IndexedDB so many
+     more trades fit on the device. Downscales to <= maxSide px and
+     re-encodes as JPEG. Skips tiny files and anything that isn't a
+     raster image. Falls back to the original on any failure. */
+  const loadImage = url => new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = rej;
+    im.src = url;
+  });
+  async function compress(file, opts) {
+    opts = opts || {};
+    const maxSide = opts.maxSide || 1600;
+    const quality = opts.quality || 0.72;
+    try {
+      if (!file || !/^image\/(jpeg|jpg|png|webp)$/i.test(file.type)) return file; // gif/unknown → leave alone
+      if (file.size <= 220 * 1024) return file;                                    // already small
+      const url = URL.createObjectURL(file);
+      let img;
+      try { img = await loadImage(url); } finally { URL.revokeObjectURL(url); }
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#0b0f17';                // flatten any transparency to the app bg
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      const blob = await new Promise(r => cv.toBlob(r, 'image/jpeg', quality));
+      if (blob && blob.size < file.size) {
+        blob.name = (file.name || 'screenshot').replace(/\.(png|webp|jpe?g)$/i, '') + '.jpg';
+        return blob;
+      }
+      return file;                              // compression didn't help (rare) → keep original
+    } catch (e) {
+      return file;                              // never block a save because of compression
+    }
+  }
+
+  /* ---------- Storage usage ---------- */
+  async function estimate() {
+    let usage = null, quota = null;
+    if (navigator.storage && navigator.storage.estimate) {
+      try { const e = await navigator.storage.estimate(); usage = e.usage; quota = e.quota; } catch (_) {}
+    }
+    let imgBytes = 0, imgCount = 0;
+    try {
+      const recs = await all();
+      imgCount = recs.length;
+      recs.forEach(r => { imgBytes += (r.size || (r.blob && r.blob.size) || 0); });
+    } catch (_) {}
+    return { usage, quota, imgBytes, imgCount };
+  }
+
   /* Backup helpers */
   const blobToDataURL = blob => new Promise((res, rej) => {
     const f = new FileReader();
@@ -103,5 +159,5 @@
     return new Blob([arr], { type: mime });
   }
 
-  TJ.images = { put, get, del, all, forTrade, deleteForTrade, count, clear, url, revoke, blobToDataURL, dataURLToBlob };
+  TJ.images = { put, get, del, all, forTrade, deleteForTrade, count, clear, url, revoke, compress, estimate, blobToDataURL, dataURLToBlob };
 })();
