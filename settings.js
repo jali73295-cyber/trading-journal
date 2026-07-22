@@ -200,6 +200,8 @@
     ['sessions', 'Sessions', 'clock'],
     ['strategies', 'Strategies', 'layers'],
     ['structures', 'Market Structure', 'layers'],
+    ['candles', 'Candle Confirmation', 'activity'],
+    ['candleSizes', 'Candle Size', 'activity'],
     ['timeframes', 'Timeframes', 'clock'],
     ['levels', 'Levels', 'target'],
     ['emotions', 'Emotions', 'smile'],
