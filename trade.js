@@ -61,6 +61,7 @@
   /* ============================ FORM MODE ============================ */
   let dirState = 'buy';
   let resState = '';
+  let rfRunnerState = '';
   let chipTags = null, chipMist = null;
   const staged = {}; // slot -> { file, url } | { remove: true }
 
@@ -86,6 +87,7 @@
     const number = isEdit ? trade.number : TJ.store.nextNumber();
     dirState = trade.direction || 'buy';
     resState = trade.result || '';
+    rfRunnerState = trade.rfRunner || '';
     const baseSlots = (S.shotSlots && S.shotSlots.length) ? S.shotSlots.map(x => x.id) : [];
     slots = [...baseSlots, ...Object.keys(trade.shots || {}).filter(k => !baseSlots.includes(k))];
     if (!slots.length) slots = ['shot-default'];
@@ -171,6 +173,12 @@
               <button type="button" data-v="loss" class="s-loss">SL</button>
               <button type="button" data-v="rf" class="s-rf">RF</button>
               <button type="button" data-v="breakeven" class="s-be">BE</button>
+            </div></div>
+          <div class="field c12" id="rfRunnerRow" style="${trade.result === 'rf' ? '' : 'display:none'}">
+            <label>Runner — rest of position ended in <span class="hint">(for RF comparison)</span></label>
+            <div class="seg" id="rfRunnerSeg">
+              <button type="button" data-v="win" class="s-win">TP</button>
+              <button type="button" data-v="loss" class="s-loss">SL</button>
             </div></div>
           ${numField('f_lot', 'Lot Size', trade.lot, 'any', '0.10')}
           ${numField('f_rra', 'RR Achieved', trade.rrAchieved, '0.01', '+2.5 / −1 / 0')}
@@ -268,8 +276,11 @@
       pnlEl.value = Math.round(rraV * bal * (riskP / 100) * 100) / 100;
     };
     segWire('dirSeg', dirState, v => { dirState = v; });
+    segWire('rfRunnerSeg', rfRunnerState, v => { rfRunnerState = v; });
     segWire('resSeg', resState, v => {
       resState = v;
+      const row = $('rfRunnerRow');
+      if (row) row.style.display = (v === 'rf') ? '' : 'none';
       const rra = $('f_rra');
       if (rra && rra.value.trim() === '' && v) {
         if (v === 'win') rra.value = $('f_rrp').value || '';
@@ -425,6 +436,7 @@
     t.rrPlanned = numv('f_rrp'); t.rrAchieved = numv('f_rra');
     t.pnl = numv('f_pnl'); t.commission = numv('f_comm'); t.spread = numv('f_spread'); t.pips = numv('f_pips');
     t.result = resState;
+    t.rfRunner = rfRunnerState;
     t.emotionBefore = g('f_eb').value.trim();
     t.emotionAfter = g('f_ea').value.trim();
     t.confidence = +g('f_conf').value;
@@ -561,6 +573,7 @@
               ${kv('Commission', fmt.money(t.commission))}
               ${kv('Spread', fmt.n(t.spread, 3))}
               ${kv('Pips', fmt.n(t.pips, 1))}
+              ${t.result === 'rf' ? kv('Runner ended', t.rfRunner === 'win' ? 'TP' : (t.rfRunner === 'loss' ? 'SL' : '—')) : ''}
             </div>
           </section>
           <section class="card" style="--i:3">
