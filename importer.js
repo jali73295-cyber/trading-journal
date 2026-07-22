@@ -193,6 +193,13 @@
       (r.commission || r.swap) ? ('net incl. commission') : ''
     ].filter(Boolean);
     const _wd = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date(o.date + 'T00:00:00').getDay()];
+    let pips = null;
+    if (entry != null && close != null) {
+      const sym = clean(r.symbol).toUpperCase();
+      const pipSize = /JPY/.test(sym) ? 0.01
+        : (/XAU|XAG|XPT|US30|US100|NAS|NDX|SPX|US500|GER|UK100|DJI|DOW/.test(sym) ? 0.1 : 0.0001);
+      pips = +(((close - entry) * (dir === 'buy' ? 1 : -1)) / pipSize).toFixed(1);
+    }
     return {
       date: o.date, time: o.time,
       day: (_wd === 'Sunday' || _wd === 'Saturday') ? '' : _wd,
@@ -204,6 +211,7 @@
       result: result,
       rrPlanned: rrP, rrAchieved: rrA,
       pnl: +profit.toFixed(2),
+      pips: pips,
       commission: r.commission ? +Math.abs(r.commission).toFixed(2) : null,
       ticket: r.ticket ? String(r.ticket) : '',
       notes: bits.join(' · ')
