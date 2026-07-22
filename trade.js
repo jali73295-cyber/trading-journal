@@ -98,7 +98,7 @@
 
     const structures = (S.structures && S.structures.length) ? S.structures : ['Bullish', 'Bearish', 'Ranging', 'Choppy', 'Reversal'];
     root.innerHTML = `
-      ${dlist('dlPairs', S.pairs)}${dlist('dlLevels', S.levels)}${dlist('dlEmotions', S.emotions)}${dlist('dlZones', S.zones || [])}
+      ${dlist('dlPairs', S.pairs)}${dlist('dlLevels', S.levels)}${dlist('dlEmotions', S.emotions)}${dlist('dlZones', S.zones || [])}${dlist('dlCandleSizes', S.candleSizes || [])}
 
       <section class="card" style="--i:0">
         <div class="card-h"><h3>${TJ.icon('info')}General</h3>
@@ -140,7 +140,8 @@
           <div class="field c4"><label for="f_candle">Candle Confirmation</label>
             <select class="select" id="f_candle">${opts(S.candles || [], trade.candle)}</select></div>
           <div class="field c4"><label for="f_candleSize">Candle Size</label>
-            <select class="select" id="f_candleSize">${opts(S.candleSizes || [], trade.candleSize)}</select></div>
+            <input class="input" id="f_candleSize" list="dlCandleSizes" placeholder="e.g. 35 pips / Small"
+              value="${esc(trade.candleSize || '')}"></div>
           <div class="field c4"><label for="f_level">Level</label>
             <input class="input" id="f_level" list="dlLevels" placeholder="e.g. Order Block"
               value="${esc(trade.level || '')}"></div>
@@ -416,7 +417,7 @@
     t.structure = g('f_structure').value;
     t.day = g('f_day').value;
     t.candle = g('f_candle').value;
-    t.candleSize = g('f_candleSize').value;
+    t.candleSize = g('f_candleSize').value.trim();
     t.level = g('f_level').value.trim();
     t.entry = numv('f_entry'); t.sl = numv('f_sl'); t.tp = numv('f_tp');
     t.riskPct = numv('f_risk'); t.lot = numv('f_lot');
