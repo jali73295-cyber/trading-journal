@@ -105,14 +105,14 @@
   function equity(ts) {
     const asc = ts.slice().sort((a, b) =>
       ((a.date || '') + (a.time || '')).localeCompare((b.date || '') + (b.time || '')) || (a.number - b.number));
-    let r = 0, pnl = 0;
-    const labels = [], rs = [], pnls = [];
+    let r = 0, pnl = 0, pip = 0;
+    const labels = [], rs = [], pnls = [], pipsArr = [];
     asc.forEach(t => {
-      r += rOf(t); pnl += pnlOf(t);
+      r += rOf(t); pnl += pnlOf(t); pip += (num(t.pips) || 0);
       labels.push('#' + (t.number || '?'));
-      rs.push(+r.toFixed(2)); pnls.push(+pnl.toFixed(2));
+      rs.push(+r.toFixed(2)); pnls.push(+pnl.toFixed(2)); pipsArr.push(+pip.toFixed(1));
     });
-    return { labels, rs, pnls, trades: asc };
+    return { labels, rs, pnls, pips: pipsArr, trades: asc };
   }
 
   /** R-multiple distribution histogram. */
