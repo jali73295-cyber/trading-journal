@@ -182,7 +182,11 @@
   function mergeImport(data) {
     const incoming = Array.isArray(data.trades) ? data.trades : [];
     const cur = trades();
-    const sigOf = t => [t.date, t.time, (t.pair || '').toUpperCase(), t.direction, t.pnl, t.entry, t.sl, t.tp].join('|');
+    const rnd = (v, d) => (v == null || v === '' || isNaN(+v)) ? '' : (+v).toFixed(d);
+    const sigOf = t => [
+      t.date || '', t.time || '', (t.pair || '').toUpperCase(), t.direction || '',
+      rnd(t.pnl, 2), rnd(t.entry, 5), rnd(t.sl, 5), rnd(t.tp, 5), rnd(t.lot, 3)
+    ].join('|');
     const ids = new Set(cur.map(t => t.id).filter(Boolean));
     const tickets = new Set(cur.map(t => String(t.ticket || '')).filter(Boolean));
     const sigs = new Set(cur.map(sigOf));
