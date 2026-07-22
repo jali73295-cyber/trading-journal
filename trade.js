@@ -98,7 +98,7 @@
 
     const structures = (S.structures && S.structures.length) ? S.structures : ['Bullish', 'Bearish', 'Ranging', 'Choppy', 'Reversal'];
     root.innerHTML = `
-      ${dlist('dlPairs', S.pairs)}${dlist('dlLevels', S.levels)}${dlist('dlEmotions', S.emotions)}${dlist('dlZones', S.zones || [])}${dlist('dlCandleSizes', S.candleSizes || [])}
+      ${dlist('dlPairs', S.pairs)}${dlist('dlLevels', S.levels)}${dlist('dlEmotions', S.emotions)}${dlist('dlZones', S.zones || [])}${dlist('dlCandleSizes', S.candleSizes || [])}${dlist('dlCandles', S.candles || [])}
 
       <section class="card" style="--i:0">
         <div class="card-h"><h3>${TJ.icon('info')}General</h3>
@@ -138,7 +138,8 @@
           <div class="field c4"><label for="f_day">Day</label>
             <select class="select" id="f_day">${opts(DAYS, trade.day || dayFromDate(trade.date))}</select></div>
           <div class="field c4"><label for="f_candle">Candle Confirmation</label>
-            <select class="select" id="f_candle">${opts(S.candles || [], trade.candle)}</select></div>
+            <input class="input" id="f_candle" list="dlCandles" placeholder="e.g. Doji / Hammer"
+              value="${esc(trade.candle || '')}"></div>
           <div class="field c4"><label for="f_candleSize">Candle Size</label>
             <input class="input" id="f_candleSize" list="dlCandleSizes" placeholder="e.g. 35 pips / Small"
               value="${esc(trade.candleSize || '')}"></div>
@@ -416,7 +417,7 @@
     t.tfEntry = g('f_tfEntry').value;
     t.structure = g('f_structure').value;
     t.day = g('f_day').value;
-    t.candle = g('f_candle').value;
+    t.candle = g('f_candle').value.trim();
     t.candleSize = g('f_candleSize').value.trim();
     t.level = g('f_level').value.trim();
     t.entry = numv('f_entry'); t.sl = numv('f_sl'); t.tp = numv('f_tp');
