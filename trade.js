@@ -281,6 +281,16 @@
       resState = v;
       const row = $('rfRunnerRow');
       if (row) row.style.display = (v === 'rf') ? '' : 'none';
+      // Immediately correct the sign of any P/L / pips already typed, so the curve is never wrong.
+      const pnlF = $('f_pnl'), pipF = $('f_pips');
+      const flip = (el, neg) => {
+        if (!el || el.value.trim() === '') return;
+        const n = parseFloat(el.value);
+        if (isNaN(n)) return;
+        el.value = neg ? -Math.abs(n) : Math.abs(n);
+      };
+      if (v === 'loss') { flip(pnlF, true); flip(pipF, true); }
+      if (v === 'win') { flip(pnlF, false); flip(pipF, false); }
       const rra = $('f_rra');
       if (rra && rra.value.trim() === '' && v) {
         if (v === 'win') rra.value = $('f_rrp').value || '';
@@ -435,6 +445,14 @@
     t.riskPct = numv('f_risk'); t.lot = numv('f_lot');
     t.rrPlanned = numv('f_rrp'); t.rrAchieved = numv('f_rra');
     t.pnl = numv('f_pnl'); t.commission = numv('f_comm'); t.spread = numv('f_spread'); t.pips = numv('f_pips');
+    // A loss can't be positive money/pips; a full TP win can't be negative — fix the sign automatically.
+    if (t.result === 'loss') {
+      if (t.pnl != null) t.pnl = -Math.abs(t.pnl);
+      if (t.pips != null) t.pips = -Math.abs(t.pips);
+    } else if (t.result === 'win') {
+      if (t.pnl != null) t.pnl = Math.abs(t.pnl);
+      if (t.pips != null) t.pips = Math.abs(t.pips);
+    }
     t.result = resState;
     t.rfRunner = rfRunnerState;
     t.emotionBefore = g('f_eb').value.trim();
