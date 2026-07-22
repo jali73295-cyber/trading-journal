@@ -192,8 +192,10 @@
       r.swap ? ('swap ' + r.swap) : '',
       (r.commission || r.swap) ? ('net incl. commission') : ''
     ].filter(Boolean);
+    const _wd = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date(o.date + 'T00:00:00').getDay()];
     return {
       date: o.date, time: o.time,
+      day: (_wd === 'Sunday' || _wd === 'Saturday') ? '' : _wd,
       pair: clean(r.symbol).toUpperCase(),
       direction: dir,
       lot: r.lot != null ? r.lot : null,
