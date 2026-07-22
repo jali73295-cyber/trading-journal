@@ -23,6 +23,17 @@
   const pnlOf = t => num(t.pnl) === null ? 0 : num(t.pnl);
   const mKey = d => (d || '').slice(0, 7);
   const yKey = d => (d || '').slice(0, 4);
+  // ISO-8601 week key: 'YYYY-Www' (weeks start Monday). Same week for Mon–Sun.
+  const wKey = d => {
+    if (!d) return '';
+    const dt = new Date(d + 'T00:00:00');
+    if (isNaN(dt)) return '';
+    const day = (dt.getDay() + 6) % 7;            // Mon=0..Sun=6
+    dt.setDate(dt.getDate() - day + 3);           // move to Thursday of this week
+    const firstThu = new Date(dt.getFullYear(), 0, 4);
+    const week = 1 + Math.round(((dt - firstThu) / 86400000 - 3 + ((firstThu.getDay() + 6) % 7)) / 7);
+    return dt.getFullYear() + '-W' + String(week).padStart(2, '0');
+  };
 
   /** Headline summary used by the dashboard cards. */
   function summary(ts) {
@@ -49,6 +60,11 @@
     const nowKey = mKey(new Date().toISOString());
     const monthTrades = ts.filter(t => mKey(t.date) === nowKey);
     const monthR = monthTrades.reduce((s, t) => s + rOf(t), 0);
+    const nowWeek = wKey(new Date().toISOString().slice(0, 10));
+    const weekTrades = ts.filter(t => wKey(t.date) === nowWeek);
+    const weekR = weekTrades.reduce((s, t) => s + rOf(t), 0);
+    const weekPnl = weekTrades.reduce((s, t) => s + pnlOf(t), 0);
+    const weekPips = weekTrades.reduce((s, t) => s + (num(t.pips) || 0), 0);
     // Current streaks — walk from the newest trade; breakeven/open ends both.
     const desc = ts.slice().sort((a, b) =>
       ((b.date || '') + (b.time || '')).localeCompare((a.date || '') + (a.time || '')) || (b.number - a.number));
@@ -70,6 +86,7 @@
       avgRRPlanned: rrPlannedN ? rrPlannedSum / rrPlannedN : 0,
       profitFactor, totalR, totalPnl, monthR,
       monthCount: monthTrades.length,
+      weekR, weekPnl, weekPips, weekCount: weekTrades.length,
       expectancy: total ? totalR / total : 0,
       streakW, streakL, best, worst
     };
@@ -164,5 +181,5 @@
     });
   }
 
-  TJ.metrics = { num, rOf, pnlOf, mKey, yKey, summary, groupBy, byMonth, byYear, byField, equity, histogramR, mistakeFreq, emotionStats, checklistStats };
+  TJ.metrics = { num, rOf, pnlOf, mKey, yKey, wKey, summary, groupBy, byMonth, byYear, byField, equity, histogramR, mistakeFreq, emotionStats, checklistStats };
 })();
