@@ -137,6 +137,10 @@
             <select class="select" id="f_structure">${opts(structures, trade.structure)}</select></div>
           <div class="field c4"><label for="f_day">Day</label>
             <select class="select" id="f_day">${opts(DAYS, trade.day || dayFromDate(trade.date))}</select></div>
+          <div class="field c4"><label for="f_candle">Candle Confirmation</label>
+            <select class="select" id="f_candle">${opts(S.candles || [], trade.candle)}</select></div>
+          <div class="field c4"><label for="f_candleSize">Candle Size</label>
+            <select class="select" id="f_candleSize">${opts(S.candleSizes || [], trade.candleSize)}</select></div>
           <div class="field c4"><label for="f_level">Level</label>
             <input class="input" id="f_level" list="dlLevels" placeholder="e.g. Order Block"
               value="${esc(trade.level || '')}"></div>
@@ -411,6 +415,8 @@
     t.tfEntry = g('f_tfEntry').value;
     t.structure = g('f_structure').value;
     t.day = g('f_day').value;
+    t.candle = g('f_candle').value;
+    t.candleSize = g('f_candleSize').value;
     t.level = g('f_level').value.trim();
     t.entry = numv('f_entry'); t.sl = numv('f_sl'); t.tp = numv('f_tp');
     t.riskPct = numv('f_risk'); t.lot = numv('f_lot');
@@ -533,6 +539,8 @@
               ${kv('Timeframes', esc(tfLine) || null)}
               ${kv('Structure', esc(t.structure))}
               ${kv('Day', esc(t.day || ''))}
+              ${kv('Candle', esc(t.candle || ''))}
+              ${kv('Candle Size', esc(t.candleSize || ''))}
               ${kv('Level', esc(t.level))}
               ${kv('Session', esc(t.session))}
               ${kv('Zone Size', esc(t.zoneSize || ''))}
