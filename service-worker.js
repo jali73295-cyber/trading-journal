@@ -3,7 +3,7 @@
    Precaches the app shell so the journal works fully offline.
    Bump VERSION whenever you edit any file, so clients update.
    ============================================================ */
-const VERSION = 'v1.0.18';
+const VERSION = 'v1.0.19';
 const CACHE = 'tradelog-' + VERSION;
 
 const ASSETS = [
@@ -47,6 +47,10 @@ self.addEventListener('install', event => {
   );
 });
 
+self.addEventListener('message', event => {
+  if (event.data === 'skipWaiting') self.skipWaiting();
+});
+
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
@@ -75,7 +79,19 @@ self.addEventListener('fetch', event => {
 
   if (url.origin !== self.location.origin) return;
 
-  // Same-origin: cache-first, network fallback (and cache what we fetch)
+  // App code (HTML/JS) → NETWORK-FIRST so new versions appear as soon as you're online.
+  // Everything else (images, fonts, icons) → cache-first for speed & offline.
+  const isCode = req.mode === 'navigate' || /\.(html|js)(\?|$)/.test(url.pathname);
+  if (isCode) {
+    event.respondWith(
+      fetch(req).then(res => {
+        if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+        return res;
+      }).catch(() => caches.match(req).then(hit => hit || caches.match('./index.html')))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(req).then(hit => {
       if (hit) return hit;
