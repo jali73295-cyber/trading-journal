@@ -264,7 +264,7 @@
           : '') +
         `${e.imgCount} screenshot${e.imgCount === 1 ? '' : 's'} · ${fmtMB(e.imgBytes)}` +
       `</div>` +
-      `<div class="note" style="margin-top:10px">${TJ.icon('info')}Screenshots are auto-compressed on save to save space. Browsers can't store data on an SD card — to move it off this device, use <b>Full Backup</b> below and save the file wherever you like (incl. SD card).</div>`;
+      `<div class="note" style="margin-top:10px">${TJ.icon('info')}Browsers can't store app data on an SD card — that's a browser limitation, not the app's. To move data off this device, use <b>Full Backup</b> below and save the file wherever you like (incl. SD card), then Import it on another device.</div>`;
   }
 
   /* ---------- Data actions ---------- */
