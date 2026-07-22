@@ -158,7 +158,6 @@
         <div class="card-b fg">
           <div class="field c12"><label>Outcome</label>
             <div class="seg" id="resSeg">
-              <button type="button" data-v="">Open</button>
               <button type="button" data-v="win" class="s-win">TP</button>
               <button type="button" data-v="loss" class="s-loss">SL</button>
               <button type="button" data-v="rf" class="s-rf">RF</button>
@@ -169,6 +168,7 @@
           ${numField('f_pnl', 'Profit / Loss (' + esc(S.currency || '$') + ')', trade.pnl, '0.01', '0.00')}
           ${numField('f_comm', 'Commission', trade.commission, '0.01', '0.00')}
           ${numField('f_spread', 'Spread', trade.spread, 'any', '0.0')}
+          ${numField('f_pips', 'Pips', trade.pips, 'any', '0.0')}
         </div>
       </section>
 
@@ -411,7 +411,7 @@
     t.entry = numv('f_entry'); t.sl = numv('f_sl'); t.tp = numv('f_tp');
     t.riskPct = numv('f_risk'); t.lot = numv('f_lot');
     t.rrPlanned = numv('f_rrp'); t.rrAchieved = numv('f_rra');
-    t.pnl = numv('f_pnl'); t.commission = numv('f_comm'); t.spread = numv('f_spread');
+    t.pnl = numv('f_pnl'); t.commission = numv('f_comm'); t.spread = numv('f_spread'); t.pips = numv('f_pips');
     t.result = resState;
     t.emotionBefore = g('f_eb').value.trim();
     t.emotionAfter = g('f_ea').value.trim();
@@ -545,6 +545,7 @@
               ${kv('RR Achieved', t.result ? `<span class="rr ${TJ.rClass(r)}">${fmt.r(r)}</span>` : null)}
               ${kv('Commission', fmt.money(t.commission))}
               ${kv('Spread', fmt.n(t.spread, 3))}
+              ${kv('Pips', fmt.n(t.pips, 1))}
             </div>
           </section>
           <section class="card" style="--i:3">
