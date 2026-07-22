@@ -54,6 +54,7 @@
       { icon: 'flame', tone: 'win', lab: 'Winning Streak', val: s.streakW, sub: 'Current run' },
       { icon: 'flame', tone: 'loss', lab: 'Losing Streak', val: s.streakL, sub: 'Current run' },
       { icon: 'chart', lab: 'Total R', val: fmt.r(s.totalR), cls: TJ.rClass(s.totalR), sub: `P/L ${fmt.money(s.totalPnl)}` },
+      { icon: 'calendar', lab: 'Weekly R', val: fmt.r(s.weekR), cls: TJ.rClass(s.weekR), sub: `This week · ${s.weekCount} trades · P/L ${fmt.money(s.weekPnl)}` },
       { icon: 'calendar', lab: 'Monthly R', val: fmt.r(s.monthR), cls: TJ.rClass(s.monthR), sub: `${monthName} · ${s.monthCount} trades` }
     ];
 
