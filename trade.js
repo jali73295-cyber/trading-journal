@@ -453,6 +453,15 @@
       if (t.pnl != null) t.pnl = Math.abs(t.pnl);
       if (t.pips != null) t.pips = Math.abs(t.pips);
     }
+    // Auto-fill Pips from the price move when left blank: entry → TP on a win, entry → SL on a loss.
+    // Pip size by instrument (gold/indices 0.1, JPY pairs 0.01, most FX 0.0001).
+    if (t.pips == null && t.entry != null) {
+      const sym = (t.pair || '').toUpperCase();
+      const pipSize = /JPY/.test(sym) ? 0.01
+        : (/XAU|XAG|XPT|US30|US100|NAS|NDX|SPX|US500|GER|UK100|DJI|DOW/.test(sym) ? 0.1 : 0.0001);
+      if (t.result === 'win' && t.tp != null) t.pips = +(Math.abs(t.tp - t.entry) / pipSize).toFixed(1);
+      else if (t.result === 'loss' && t.sl != null) t.pips = -Math.abs((t.entry - t.sl) / pipSize).toFixed(1) * 1;
+    }
     t.result = resState;
     t.rfRunner = rfRunnerState;
     t.emotionBefore = g('f_eb').value.trim();
