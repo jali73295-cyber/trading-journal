@@ -448,7 +448,8 @@
         } else if (st.file) {
           if (oldId) await TJ.images.del(oldId).catch(() => {});
           const id = TJ.store.uid();
-          await TJ.images.put({ id, tradeId: saved.id, slot, name: st.file.name, blob: st.file });
+          const blob = await TJ.images.compress(st.file);
+          await TJ.images.put({ id, tradeId: saved.id, slot, name: st.file.name, blob: blob });
           saved.shots[slot] = id;
           if (st.url) URL.revokeObjectURL(st.url);
         }
