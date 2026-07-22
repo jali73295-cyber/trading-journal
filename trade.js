@@ -98,7 +98,7 @@
 
     const structures = (S.structures && S.structures.length) ? S.structures : ['Bullish', 'Bearish', 'Ranging', 'Choppy', 'Reversal'];
     root.innerHTML = `
-      ${dlist('dlPairs', S.pairs)}${dlist('dlLevels', S.levels)}${dlist('dlEmotions', S.emotions)}
+      ${dlist('dlPairs', S.pairs)}${dlist('dlLevels', S.levels)}${dlist('dlEmotions', S.emotions)}${dlist('dlZones', S.zones || [])}
 
       <section class="card" style="--i:0">
         <div class="card-h"><h3>${TJ.icon('info')}General</h3>
@@ -110,6 +110,9 @@
             <input class="input" id="f_time" type="time" value="${esc(trade.time || '')}"></div>
           <div class="field c3"><label for="f_session">Trading Session</label>
             <select class="select" id="f_session">${opts(S.sessions, trade.session)}</select></div>
+          <div class="field c3"><label for="f_zone">Zone Size</label>
+            <input class="input" id="f_zone" list="dlZones" placeholder="e.g. 15 pips / small"
+              value="${esc(trade.zoneSize || '')}"></div>
           <div class="field c3"><label for="f_pair">Pair <span class="req">*</span></label>
             <input class="input" id="f_pair" list="dlPairs" placeholder="e.g. XAUUSD"
               value="${esc(trade.pair || '')}" style="text-transform:uppercase"></div>
@@ -400,6 +403,7 @@
     t.date = g('f_date').value;
     t.time = g('f_time').value;
     t.session = g('f_session').value;
+    t.zoneSize = g('f_zone').value.trim();
     t.pair = g('f_pair').value.trim().toUpperCase();
     t.direction = dirState;
     t.tfMain = g('f_tfMain').value;
@@ -448,8 +452,7 @@
         } else if (st.file) {
           if (oldId) await TJ.images.del(oldId).catch(() => {});
           const id = TJ.store.uid();
-          const blob = await TJ.images.compress(st.file);
-          await TJ.images.put({ id, tradeId: saved.id, slot, name: st.file.name, blob: blob });
+          await TJ.images.put({ id, tradeId: saved.id, slot, name: st.file.name, blob: st.file });
           saved.shots[slot] = id;
           if (st.url) URL.revokeObjectURL(st.url);
         }
@@ -532,6 +535,7 @@
               ${kv('Day', esc(t.day || ''))}
               ${kv('Level', esc(t.level))}
               ${kv('Session', esc(t.session))}
+              ${kv('Zone Size', esc(t.zoneSize || ''))}
             </div>
           </section>
           <section class="card" style="--i:2">
