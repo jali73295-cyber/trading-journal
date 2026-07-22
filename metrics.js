@@ -181,5 +181,57 @@
     });
   }
 
-  TJ.metrics = { num, rOf, pnlOf, mKey, yKey, wKey, summary, groupBy, byMonth, byYear, byField, equity, histogramR, mistakeFreq, emotionStats, checklistStats };
+  /* ---------- RF vs Normal method comparison ----------
+     RF method (as the trader does it): book ~half at +1R, leave the runner
+     (rest of position) with SL/TP unchanged. Per RF trade the OUTCOME is:
+        runner hit TP  → total ≈ +2R    (half locked +0.5R, runner +1.5R)
+        runner hit SL  → total ≈  0R     (half +0.5R, runner −0.5R)
+     A NORMAL full-size trade on the same setup (no partial) would give:
+        runner would-be TP → +plannedR (full target)
+        runner would-be SL → −1R
+     So the method's edge, per trade, is exactly:
+        runner TP → RF − Normal = 2 − plannedR   (usually negative: RF gives up upside)
+        runner SL → RF − Normal = 0 − (−1) = +1R (RF saves the loss)
+     Net over history: RF wins when losers (runner-SL) outweigh the upside
+     given up on winners (runner-TP). Everything is exact in R; money is
+     estimated with the account's average $ per R. */
+  function rfCompare(ts) {
+    const rfs = ts.filter(t => t.result === 'rf' && (t.rfRunner === 'win' || t.rfRunner === 'loss'));
+    const missingRunner = ts.filter(t => t.result === 'rf' && t.rfRunner !== 'win' && t.rfRunner !== 'loss').length;
+
+    // account-wide $ per R (from trades that have both a real P/L and a non-zero R)
+    let moneySum = 0, rSum = 0;
+    ts.forEach(t => {
+      const r = rOf(t), p = pnlOf(t);
+      if (t.result && r !== 0 && p !== 0) { moneySum += Math.abs(p); rSum += Math.abs(r); }
+    });
+    const perR = rSum > 0 ? moneySum / rSum : null;
+
+    let rfR = 0, normR = 0, savedCount = 0, costCount = 0, savedR = 0, costR = 0;
+    rfs.forEach(t => {
+      const plannedR = (num(t.rrPlanned) != null && num(t.rrPlanned) > 0) ? num(t.rrPlanned) : 2;
+      const runnerTP = t.rfRunner === 'win';
+      const rfOutcomeR = runnerTP ? 2 : 0;          // model of the RF result in R
+      const normalR = runnerTP ? plannedR : -1;     // full-size alternative in R
+      rfR += rfOutcomeR;
+      normR += normalR;
+      const diff = rfOutcomeR - normalR;
+      if (diff > 0.0001) { savedCount++; savedR += diff; }
+      else if (diff < -0.0001) { costCount++; costR += -diff; }
+    });
+
+    const diffR = rfR - normR;
+    return {
+      count: rfs.length, missingRunner,
+      rfR: +rfR.toFixed(2), normR: +normR.toFixed(2), diffR: +diffR.toFixed(2),
+      savedCount, costCount, savedR: +savedR.toFixed(2), costR: +costR.toFixed(2),
+      perR: perR != null ? +perR.toFixed(2) : null,
+      rfMoney: perR != null ? +(rfR * perR).toFixed(2) : null,
+      normMoney: perR != null ? +(normR * perR).toFixed(2) : null,
+      diffMoney: perR != null ? +(diffR * perR).toFixed(2) : null,
+      verdict: diffR > 0.01 ? 'rf' : (diffR < -0.01 ? 'normal' : 'equal')
+    };
+  }
+
+  TJ.metrics = { num, rOf, pnlOf, mKey, yKey, wKey, summary, rfCompare, groupBy, byMonth, byYear, byField, equity, histogramR, mistakeFreq, emotionStats, checklistStats };
 })();
