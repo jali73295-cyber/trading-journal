@@ -264,8 +264,11 @@
     hbar('chPair', pairRows, g => g.r, signCols, rTip(pairRows));
     const sessRows = M.byField(ts, 'session');
     hbar('chSession', sessRows, g => g.r, signCols, rTip(sessRows));
-    const stratRows = M.byField(ts, 'setup');
-    hbar('chStrategy', stratRows, g => g.r, signCols, rTip(stratRows));
+    const DAY_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const dayRows = M.byField(ts, 'day')
+      .filter(g => DAY_ORDER.includes(g.key))
+      .sort((a, b) => DAY_ORDER.indexOf(a.key) - DAY_ORDER.indexOf(b.key));
+    hbar('chStrategy', dayRows, g => g.r, signCols, rTip(dayRows));
     const tfRows = M.groupBy(ts, t => t.tfEntry || t.tfMain || null);
     hbar('chTimeframe', tfRows, g => g.r, signCols, rTip(tfRows));
 
