@@ -156,7 +156,31 @@
   /* ---------- PWA ---------- */
   function registerSW() {
     if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) {
-      navigator.serviceWorker.register('service-worker.js').catch(() => {});
+      navigator.serviceWorker.register('service-worker.js').then(reg => {
+        // Ask any waiting worker to take over immediately.
+        if (reg.waiting) reg.waiting.postMessage('skipWaiting');
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener('statechange', () => {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              nw.postMessage('skipWaiting'); // new code is ready → activate it
+            }
+          });
+        });
+        // Check for updates whenever the app regains focus.
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') reg.update().catch(() => {});
+        });
+      }).catch(() => {});
+
+      // When the new worker takes control, reload once so the fresh code runs.
+      let _reloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (_reloaded) return;
+        _reloaded = true;
+        location.reload();
+      });
     }
   }
   window.addEventListener('beforeinstallprompt', e => {
