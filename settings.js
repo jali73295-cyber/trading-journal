@@ -242,6 +242,31 @@
     });
   }
 
+  /* ---------- Storage usage ---------- */
+  async function renderStorage() {
+    const box = $('storageMeter');
+    if (!box || !TJ.images || !TJ.images.estimate) return;
+    const fmtMB = b => b == null ? '—' : (b < 1048576 ? (b / 1024).toFixed(0) + ' KB' : (b / 1048576).toFixed(1) + ' MB');
+    box.innerHTML = '<span class="muted" style="font-size:.8rem">Calculating storage…</span>';
+    let e;
+    try { e = await TJ.images.estimate(); } catch (_) { box.innerHTML = ''; return; }
+    const used = e.usage, quota = e.quota;
+    const pct = (used != null && quota) ? Math.min(100, Math.round((used / quota) * 100)) : null;
+    const bar = pct != null
+      ? `<div class="progress" style="margin:8px 0 6px"><i style="width:${pct}%"></i></div>`
+      : '';
+    box.innerHTML =
+      `<div style="font-size:.82rem;font-weight:600;margin-bottom:2px">Device storage used by this app</div>` +
+      bar +
+      `<div class="muted" style="font-size:.78rem;line-height:1.6">` +
+        (used != null
+          ? `${fmtMB(used)}${quota ? ' of ~' + fmtMB(quota) + ' available' : ''}${pct != null ? ' (' + pct + '%)' : ''}<br>`
+          : '') +
+        `${e.imgCount} screenshot${e.imgCount === 1 ? '' : 's'} · ${fmtMB(e.imgBytes)}` +
+      `</div>` +
+      `<div class="note" style="margin-top:10px">${TJ.icon('info')}Screenshots are auto-compressed on save to save space. Browsers can't store data on an SD card — to move it off this device, use <b>Full Backup</b> below and save the file wherever you like (incl. SD card).</div>`;
+  }
+
   /* ---------- Data actions ---------- */
   function renderData() {
     const defs = [
@@ -443,6 +468,7 @@
     renderLists();
     renderAI();
     renderData();
+    renderStorage();
     renderAbout();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
