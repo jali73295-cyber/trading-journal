@@ -113,18 +113,20 @@
       `<div class="card qstat" style="--i:${i}"><div class="q-val ${cls || ''}">${v}</div><div class="q-lab">${l}</div></div>`
     ).join('');
 
-    /* 1 · Equity curve */
+    /* 1 · Equity curve — $ / R / Pips */
     const eq = M.equity(ts);
     if (eqMode === null) eqMode = ts.some(t => M.pnlOf(t)) ? 'usd' : 'r';
-    const usd = eqMode === 'usd';
     document.querySelectorAll('#eqSegS button').forEach(b => b.classList.toggle('active', b.dataset.v === eqMode));
+    const eqSeries = eqMode === 'usd' ? eq.pnls : (eqMode === 'pips' ? eq.pips : eq.rs);
+    const eqLabel = eqMode === 'usd' ? 'Equity (P/L)' : (eqMode === 'pips' ? 'Cumulative Pips' : 'Cumulative R');
+    const eqAxis = v => eqMode === 'usd' ? fmt.money(v) : (eqMode === 'pips' ? v + 'p' : v + 'R');
     if (!setEmpty('chEquity', eq.labels.length < 2, 'Log at least two trades to draw the curve.')) {
       make('chEquity', {
         type: 'line',
         data: {
           labels: eq.labels,
           datasets: [{
-            label: usd ? 'Equity (P/L)' : 'Cumulative R', data: usd ? eq.pnls : eq.rs,
+            label: eqLabel, data: eqSeries,
             borderColor: c.accent,
             backgroundColor: ctx => TJ.charts.grad(ctx.chart, c.accent),
             fill: true, tension: 0.35, borderWidth: 2.4,
@@ -141,13 +143,20 @@
                   const t = eq.trades[it[0].dataIndex];
                   return `${t.pair || ''} ${it[0].label} · ${fmt.date(t.date)}`;
                 },
-                label: it => usd
-                  ? ` Equity ${fmt.money(it.parsed.y)}   (${fmt.r(eq.rs[it.dataIndex])})`
-                  : ` Equity ${fmt.r(it.parsed.y)}   (P/L ${fmt.money(eq.pnls[it.dataIndex])})`
+                label: it => {
+                  const i = it.dataIndex;
+                  const main = eqMode === 'usd' ? ` Equity ${fmt.money(it.parsed.y)}`
+                    : eqMode === 'pips' ? ` Equity ${it.parsed.y}p`
+                    : ` Equity ${fmt.r(it.parsed.y)}`;
+                  const extra = eqMode === 'usd' ? `(${fmt.r(eq.rs[i])} · ${eq.pips[i]}p)`
+                    : eqMode === 'pips' ? `(${fmt.r(eq.rs[i])} · ${fmt.money(eq.pnls[i])})`
+                    : `(${fmt.money(eq.pnls[i])} · ${eq.pips[i]}p)`;
+                  return main + '   ' + extra;
+                }
               }
             }
           },
-          scales: { x: { ticks: { maxTicksLimit: 12 }, grid: { display: false } }, y: { ticks: { callback: v => usd ? fmt.money(v) : v + 'R' } } }
+          scales: { x: { ticks: { maxTicksLimit: 12 }, grid: { display: false } }, y: { ticks: { callback: eqAxis } } }
         }
       });
     }
