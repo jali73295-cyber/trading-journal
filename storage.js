@@ -140,7 +140,7 @@
       time: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
       session: '', pair: '', direction: 'buy',
       tfMain: '', tfHigher: '', tfEntry: '',
-      structure: '', setup: '', level: '',
+      structure: '', setup: '', day: '', level: '',
       entry: null, sl: null, tp: null,
       riskPct: settings().defaultRisk, lot: null,
       rrPlanned: null, rrAchieved: null,
@@ -173,7 +173,7 @@
   }
 
   const CSV_COLS = ['number', 'date', 'time', 'session', 'pair', 'direction', 'tfMain', 'tfHigher', 'tfEntry',
-    'structure', 'setup', 'level', 'entry', 'sl', 'tp', 'riskPct', 'lot', 'rrPlanned', 'rrAchieved',
+    'structure', 'setup', 'day', 'level', 'entry', 'sl', 'tp', 'riskPct', 'lot', 'rrPlanned', 'rrAchieved',
     'pnl', 'commission', 'spread', 'result', 'emotionBefore', 'emotionAfter', 'confidence',
     'checklistScore', 'mistakes', 'lesson', 'tags', 'tvLink', 'notes'];
   function toCSV(rows) {
@@ -238,8 +238,11 @@
     rows.reverse().forEach(r => {
       const [d, time, pair, dir, session, setup, htf, ltf, structure, level, result, rrP, rrA, pnl, risk, eb, ea, conf, tags, mistakes, lesson] = r;
       const t = blank();
+      const _sd = iso(d);
+      const _wd = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date(_sd + 'T00:00:00').getDay()];
       Object.assign(t, {
-        date: iso(d), time, pair, direction: dir, session, setup,
+        date: _sd, time, pair, direction: dir, session, setup,
+        day: (_wd === 'Sunday' || _wd === 'Saturday') ? '' : _wd,
         tfMain: htf, tfHigher: htf, tfEntry: ltf, structure, level,
         riskPct: risk, rrPlanned: rrP, rrAchieved: rrA, pnl,
         commission: -2, spread: 0.3, result,
