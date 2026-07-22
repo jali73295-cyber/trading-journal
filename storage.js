@@ -174,6 +174,44 @@
     _settings = _trades = _meta = null;
   }
 
+  /* Merge trades from a backup into the CURRENT data (nothing is deleted).
+     Skips duplicates by id, broker ticket, or a content signature, and
+     renumbers incoming trades so numbers never collide.
+     Returns { added, skipped, idMap } — idMap maps old→new trade id so
+     the caller can re-point imported images. */
+  function mergeImport(data) {
+    const incoming = Array.isArray(data.trades) ? data.trades : [];
+    const cur = trades();
+    const sigOf = t => [t.date, t.time, (t.pair || '').toUpperCase(), t.direction, t.pnl, t.entry, t.sl, t.tp].join('|');
+    const ids = new Set(cur.map(t => t.id).filter(Boolean));
+    const tickets = new Set(cur.map(t => String(t.ticket || '')).filter(Boolean));
+    const sigs = new Set(cur.map(sigOf));
+    const idMap = {};
+    let added = 0, skipped = 0;
+    // process oldest-first so renumbering stays chronological-ish
+    const asc = incoming.slice().sort((a, b) =>
+      ((a.date || '') + (a.time || '')).localeCompare((b.date || '') + (b.time || '')) || (a.number || 0) - (b.number || 0));
+    for (const raw of asc) {
+      const t = Object.assign({}, raw);
+      const dup = (t.id && ids.has(t.id)) || (t.ticket && tickets.has(String(t.ticket))) || sigs.has(sigOf(t));
+      if (dup) { skipped++; continue; }
+      const oldId = t.id;
+      t.id = uid();                                   // fresh id to avoid any clash
+      if (oldId) idMap[oldId] = t.id;
+      t.number = ++meta().lastNumber;                 // fresh number, continues our sequence
+      t.createdAt = t.createdAt || new Date().toISOString();
+      t.updatedAt = new Date().toISOString();
+      cur.push(t);
+      ids.add(t.id);
+      if (t.ticket) tickets.add(String(t.ticket));
+      sigs.add(sigOf(t));
+      added++;
+    }
+    saveMeta();
+    persist();
+    return { added, skipped, idMap };
+  }
+
   const CSV_COLS = ['number', 'date', 'time', 'session', 'pair', 'direction', 'tfMain', 'tfHigher', 'tfEntry',
     'structure', 'setup', 'day', 'candle', 'candleSize', 'level', 'zoneSize', 'entry', 'sl', 'tp', 'riskPct', 'lot', 'rrPlanned', 'rrAchieved',
     'pnl', 'commission', 'spread', 'pips', 'result', 'emotionBefore', 'emotionAfter', 'confidence',
@@ -260,7 +298,7 @@
   TJ.store = {
     uid, settings, saveSettings, defaults, meta, saveMeta,
     list, listAsc, byId, nextNumber, save, remove, blank,
-    exportData, replaceAll, clearAll, toCSV, usage, seedDemo,
+    exportData, replaceAll, mergeImport, clearAll, toCSV, usage, seedDemo,
     KEYS: K, SCHEMA
   };
 })();
