@@ -33,6 +33,8 @@
       timeframes: ['1M', '3M', '5M', '15M', '30M', '1H', '2H', '4H', 'Daily', 'Weekly'],
       levels: ['TJL1', 'TJL2 A+', 'SBR', 'RBS', 'DT', 'DB', 'QML A+', 'DUAL CHOC', 'ISS Level 2', 'ISS Level 3', 'ISS Level 4 A+'],
       structures: ['Bullish', 'Bearish', 'Ranging', 'Choppy', 'Reversal'],
+      candles: ['Doji', 'Hammer', 'Normal Green'],
+      candleSizes: ['Small', 'Normal', 'Big'],
       emotions: ['Calm', 'Confident', 'Focused', 'Neutral', 'Hesitant', 'Anxious', 'FOMO', 'Greedy', 'Fearful', 'Frustrated', 'Revenge', 'Tired'],
       mistakes: ['Early Entry', 'Late Entry', 'Moved Stop Loss', 'Oversized Position', 'No Confirmation', 'Ignored Plan', 'Revenge Trade', 'Chased Price', 'Exited Too Early', 'Held Too Long', 'Traded Into News', 'Overtrading'],
       tags: ['A+', 'News', 'FOMO', 'Revenge', 'SMC', 'ISS', 'Scalp', 'Swing'],
@@ -140,7 +142,7 @@
       time: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
       session: '', zoneSize: '', pair: '', direction: 'buy',
       tfMain: '', tfHigher: '', tfEntry: '',
-      structure: '', setup: '', day: '', level: '',
+      structure: '', setup: '', day: '', candle: '', candleSize: '', level: '',
       entry: null, sl: null, tp: null,
       riskPct: settings().defaultRisk, lot: null,
       rrPlanned: null, rrAchieved: null,
@@ -173,7 +175,7 @@
   }
 
   const CSV_COLS = ['number', 'date', 'time', 'session', 'pair', 'direction', 'tfMain', 'tfHigher', 'tfEntry',
-    'structure', 'setup', 'day', 'level', 'zoneSize', 'entry', 'sl', 'tp', 'riskPct', 'lot', 'rrPlanned', 'rrAchieved',
+    'structure', 'setup', 'day', 'candle', 'candleSize', 'level', 'zoneSize', 'entry', 'sl', 'tp', 'riskPct', 'lot', 'rrPlanned', 'rrAchieved',
     'pnl', 'commission', 'spread', 'pips', 'result', 'emotionBefore', 'emotionAfter', 'confidence',
     'checklistScore', 'mistakes', 'lesson', 'tags', 'tvLink', 'notes'];
   function toCSV(rows) {
