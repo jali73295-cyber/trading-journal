@@ -147,7 +147,7 @@
       riskPct: settings().defaultRisk, lot: null,
       rrPlanned: null, rrAchieved: null,
       pnl: null, commission: null, spread: null, pips: null,
-      result: '', emotionBefore: '', emotionAfter: '', confidence: 5,
+      result: '', rfRunner: '', emotionBefore: '', emotionAfter: '', confidence: 5,
       checklist: {}, mistakes: [], lesson: '',
       tvLink: '', notes: '', tags: [], shots: {}
     };
@@ -218,7 +218,7 @@
 
   const CSV_COLS = ['number', 'date', 'time', 'session', 'pair', 'direction', 'tfMain', 'tfHigher', 'tfEntry',
     'structure', 'setup', 'day', 'candle', 'candleSize', 'level', 'zoneSize', 'entry', 'sl', 'tp', 'riskPct', 'lot', 'rrPlanned', 'rrAchieved',
-    'pnl', 'commission', 'spread', 'pips', 'result', 'emotionBefore', 'emotionAfter', 'confidence',
+    'pnl', 'commission', 'spread', 'pips', 'result', 'rfRunner', 'emotionBefore', 'emotionAfter', 'confidence',
     'checklistScore', 'mistakes', 'lesson', 'tags', 'tvLink', 'notes'];
   function toCSV(rows) {
     const q = v => {
