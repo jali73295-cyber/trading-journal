@@ -78,7 +78,7 @@
       <section class="grid2">
         <div class="card chart-card" style="--i:3">
           <div class="card-h"><h3>${TJ.icon('chart')}Equity Curve</h3><span class="spacer"></span>
-            <div class="seg" id="eqSeg"><button data-v="usd">$</button><button data-v="r">R</button></div></div>
+            <div class="seg" id="eqSeg"><button data-v="usd">$</button><button data-v="r">R</button><button data-v="pips">Pips</button></div></div>
           <div class="chart-wrap tall">${trades.length > 1 ? '<canvas id="dashEquity"></canvas>' : '<div class="mini-empty">Log a couple of trades to draw your curve.</div>'}</div>
         </div>
         <div class="card" style="--i:4">
@@ -119,15 +119,17 @@
     TJ.charts.themeChart();
     const c = TJ.charts.colors();
     const eq = M.equity(trades);
-    const usd = mode === 'usd';
+    const series = mode === 'usd' ? eq.pnls : (mode === 'pips' ? eq.pips : eq.rs);
+    const label = mode === 'usd' ? 'Equity (P/L)' : (mode === 'pips' ? 'Cumulative Pips' : 'Cumulative R');
+    const axis = v => mode === 'usd' ? fmt.money(v) : (mode === 'pips' ? v + 'p' : v + 'R');
     if (eqChart) eqChart.destroy();
     eqChart = new Chart(document.getElementById('dashEquity'), {
       type: 'line',
       data: {
         labels: eq.labels,
         datasets: [{
-          label: usd ? 'Equity (P/L)' : 'Cumulative R',
-          data: usd ? eq.pnls : eq.rs,
+          label: label,
+          data: series,
           borderColor: c.accent,
           backgroundColor: ctx => TJ.charts.grad(ctx.chart, c.accent),
           borderWidth: 2.4, fill: true, tension: 0.35,
@@ -145,15 +147,22 @@
                 const t = eq.trades[items[0].dataIndex];
                 return `${t.pair || ''} ${items[0].label} · ${fmt.date(t.date)}`;
               },
-              label: item => usd
-                ? ` Equity ${fmt.money(item.parsed.y)}   (${fmt.r(eq.rs[item.dataIndex])})`
-                : ` Equity ${fmt.r(item.parsed.y)}   (P/L ${fmt.money(eq.pnls[item.dataIndex])})`
+              label: item => {
+                const i = item.dataIndex;
+                const main = mode === 'usd' ? ` Equity ${fmt.money(item.parsed.y)}`
+                  : mode === 'pips' ? ` Equity ${item.parsed.y}p`
+                  : ` Equity ${fmt.r(item.parsed.y)}`;
+                const extra = mode === 'usd' ? `(${fmt.r(eq.rs[i])} · ${eq.pips[i]}p)`
+                  : mode === 'pips' ? `(${fmt.r(eq.rs[i])} · ${fmt.money(eq.pnls[i])})`
+                  : `(${fmt.money(eq.pnls[i])} · ${eq.pips[i]}p)`;
+                return main + '   ' + extra;
+              }
             }
           }
         },
         scales: {
           x: { ticks: { maxTicksLimit: 10 }, grid: { display: false } },
-          y: { ticks: { callback: v => usd ? fmt.money(v) : v + 'R' } }
+          y: { ticks: { callback: axis } }
         }
       }
     });
